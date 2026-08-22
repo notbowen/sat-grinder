@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1787374949167,
+      "tag": "0000_soft_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787375245041,
+      "tag": "0001_yummy_moondragon",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787376767820,
+      "tag": "0002_sparkling_korvac",
+      "breakpoints": true
+    }
+  ]
+}

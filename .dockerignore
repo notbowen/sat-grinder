@@ -1,0 +1,11 @@
+.data
+.env*
+!.env.example
+.git
+.next
+node_modules
+playwright-report
+test-results
+coverage
+npm-debug.log*
+pnpm-debug.log*

@@ -39,18 +39,85 @@ async function fetchJson(url: string, body?: unknown) {
   throw lastError;
 }
 
-const allowedTags = [...sanitizeHtml.defaults.allowedTags, "img", "figure", "figcaption", "math", "mrow", "mi", "mn", "mo", "mfrac", "msup", "msub", "msubsup", "msqrt", "mroot", "mtext", "mfenced", "mtable", "mtr", "mtd", "mover", "munder", "munderover", "menclose", "mspace", "semantics", "annotation"];
-function clean(html: string) {
+const mathTags = ["math", "mrow", "mi", "mn", "mo", "mfrac", "msup", "msub", "msubsup", "msqrt", "mroot", "mtext", "mfenced", "mtable", "mtr", "mtd", "mover", "munder", "munderover", "menclose", "mspace", "semantics", "annotation"];
+const svgTags = ["svg", "g", "defs", "path", "use", "clipPath", "rect", "marker", "line", "text", "tspan", "circle", "ellipse", "polyline", "polygon", "linearGradient", "radialGradient", "stop", "title", "desc"];
+const allowedTags = [...sanitizeHtml.defaults.allowedTags, "img", "figure", "figcaption", ...mathTags, ...svgTags];
+const svgStyleAttributes = ["style"];
+const svgColor = /^(?:none|transparent|currentColor|#[0-9a-f]{3,8}|rgba?\(\s*\d{1,3}(?:\.\d+)?%?(?:\s*,\s*\d{1,3}(?:\.\d+)?%?){2}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)|[a-z]+)$/i;
+const svgNumber = /^-?(?:\d+(?:\.\d+)?|\.\d+)(?:e[+-]?\d+)?(?:px|pt|pc|mm|cm|in|em|rem|%)?$/i;
+const localSvgReference = /^url\(\s*#[A-Za-z_][\w:.-]*\s*\)$/;
+const localSvgHref = /^#[A-Za-z_][\w:.-]*$/;
+
+function filterSvgReferences(tagName: string, attribs: sanitizeHtml.Attributes) {
+  if (!svgTags.includes(tagName)) return { tagName, attribs };
+  const filtered = { ...attribs };
+  for (const attribute of ["clip-path", "marker-start", "marker-mid", "marker-end", "mask", "filter"]) {
+    if (filtered[attribute] && !localSvgReference.test(filtered[attribute])) delete filtered[attribute];
+  }
+  for (const attribute of ["fill", "stroke"]) {
+    if (filtered[attribute]?.includes("url(") && !localSvgReference.test(filtered[attribute])) delete filtered[attribute];
+  }
+  for (const attribute of ["href", "xlink:href"]) {
+    if (filtered[attribute] && !localSvgHref.test(filtered[attribute])) delete filtered[attribute];
+  }
+  if (filtered.transform && !/^[A-Za-z0-9+.,()\s-]+$/.test(filtered.transform)) delete filtered.transform;
+  return { tagName, attribs: filtered };
+}
+
+export function sanitizeQuestionHtml(html: string) {
   return sanitizeHtml(html, {
     allowedTags,
     allowedAttributes: {
       "*": ["class", "id", "aria-hidden", "aria-label", "role"],
+      p: ["style"],
       math: ["xmlns", "alttext", "display"],
       img: ["src", "alt", "width", "height"],
-      td: ["colspan", "rowspan"], th: ["colspan", "rowspan"], annotation: ["encoding"],
+      td: ["colspan", "rowspan"],
+      th: ["colspan", "rowspan"],
+      annotation: ["encoding"],
+      svg: ["width", "height", "viewBox", "version", "xmlns", "xmlns:xlink", "preserveAspectRatio", ...svgStyleAttributes],
+      g: ["clip-path", "fill", "font-family", "font-size", "opacity", "text-anchor", "transform", ...svgStyleAttributes],
+      path: ["clip-path", "d", "fill", "marker-start", "marker-mid", "marker-end", "stroke", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-width", "transform", ...svgStyleAttributes],
+      use: ["x", "y", "width", "height", "href", "xlink:href", "fill", "stroke", "transform", ...svgStyleAttributes],
+      clipPath: ["clipPathUnits", "transform"],
+      rect: ["x", "y", "width", "height", "rx", "ry", "clip-path", "fill", "stroke", "stroke-width", "transform", ...svgStyleAttributes],
+      marker: ["markerHeight", "markerUnits", "markerWidth", "orient", "preserveAspectRatio", "refX", "refY", "viewBox"],
+      line: ["x1", "x2", "y1", "y2", "marker-start", "marker-mid", "marker-end", "fill", "stroke", "stroke-width", "transform", ...svgStyleAttributes],
+      text: ["x", "y", "dx", "dy", "fill", "font-family", "font-size", "font-style", "font-weight", "text-anchor", "transform", ...svgStyleAttributes],
+      tspan: ["x", "y", "dx", "dy", "fill", "font-family", "font-size", "font-style", "font-weight", "text-anchor", ...svgStyleAttributes],
+      circle: ["cx", "cy", "r", "fill", "stroke", "stroke-width", "transform", ...svgStyleAttributes],
+      ellipse: ["cx", "cy", "rx", "ry", "fill", "stroke", "stroke-width", "transform", ...svgStyleAttributes],
+      polyline: ["points", "fill", "stroke", "stroke-width", "transform", ...svgStyleAttributes],
+      polygon: ["points", "fill", "stroke", "stroke-width", "transform", ...svgStyleAttributes],
+      linearGradient: ["x1", "x2", "y1", "y2", "gradientUnits", "gradientTransform", "href", "xlink:href"],
+      radialGradient: ["cx", "cy", "r", "fx", "fy", "gradientUnits", "gradientTransform", "href", "xlink:href"],
+      stop: ["offset", "stop-color", "stop-opacity", ...svgStyleAttributes],
     },
     allowedSchemes: ["https"], allowedSchemesByTag: { img: ["https"] },
-    allowedStyles: { "*": { "text-align": [/^left$|^right$|^center$/] } },
+    allowedStyles: {
+      "*": {
+        "text-align": [/^(?:left|right|center)$/],
+        fill: [svgColor],
+        stroke: [svgColor],
+        "stroke-width": [svgNumber],
+        "stroke-linecap": [/^(?:butt|round|square)$/],
+        "stroke-linejoin": [/^(?:arcs|bevel|miter|miter-clip|round)$/],
+        "stroke-dasharray": [/^(?:none|[\d.eE+,\s-]+)$/],
+        "stroke-dashoffset": [svgNumber],
+        opacity: [/^(?:0|1|0?\.\d+)$/],
+        "fill-opacity": [/^(?:0|1|0?\.\d+)$/],
+        "stroke-opacity": [/^(?:0|1|0?\.\d+)$/],
+        "font-family": [/^[\w ,"'-]+$/],
+        "font-size": [svgNumber],
+        "font-style": [/^(?:normal|italic|oblique)$/],
+        "font-weight": [/^(?:normal|bold|bolder|lighter|[1-9]00)$/],
+        "text-anchor": [/^(?:start|middle|end)$/],
+        "dominant-baseline": [/^[a-z-]+$/],
+        "clip-path": [localSvgReference],
+      },
+    },
+    transformTags: { "*": filterSvgReferences },
+    parser: { lowerCaseTags: false, lowerCaseAttributeNames: false },
   });
 }
 
@@ -82,7 +149,7 @@ async function materialize(html: string | null | undefined) {
   for (const source of new Set(sources)) {
     try { const asset = await storeImage(source); if (asset) { assets.push(asset); rewritten = rewritten.split(source).join(`/api/question-assets/${asset.id}`); } } catch { /* keep the importer moving; sanitizer removes unsupported sources */ }
   }
-  return { html: clean(rewritten), assets };
+  return { html: sanitizeQuestionHtml(rewritten), assets };
 }
 
 async function concurrentMap<T, R>(items: T[], concurrency: number, mapper: (item: T, index: number) => Promise<R>) {

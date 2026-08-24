@@ -72,7 +72,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .question-html { overflow-wrap: anywhere; font-size: 1rem; line-height: 1.75; }
 .question-html p + p { margin-top: 1rem; }
 .question-html math { max-width: 100%; overflow-x: auto; }
-.question-html img { display: block; max-width: 100%; height: auto; margin: 1rem auto; }
+.question-html img, .question-html svg { display: block; max-width: 100%; height: auto; margin: 1rem auto; }
 .question-html table { width: 100%; margin: 1rem 0; border-collapse: collapse; }
 .question-html th, .question-html td { border: 1px solid var(--line); padding: .6rem; text-align: left; }
 .answer-option { display: grid; cursor: pointer; grid-template-columns: auto 1fr; align-items: start; gap: .9rem; border: 1px solid var(--line); border-radius: .85rem; background: var(--paper); padding: .9rem; transition: border-color .15s ease, background .15s ease; }

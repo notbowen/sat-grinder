@@ -1,3 +1,5 @@
+import { MAX_MATH_RESPONSE_LENGTH, normalizeMathResponse } from "@/lib/math-response";
+
 export type GradeableQuestion = { type: "mcq" | "spr"; correctAnswers: string[] };
 
 export type GradeResult = { correct: boolean; valid: boolean; message?: string };
@@ -31,10 +33,10 @@ function rational(value: string): [bigint, bigint] | null {
 
 export function validateNumericResponse(response: string): GradeResult {
   const value = response.trim();
-  const maximum = value.startsWith("-") ? 6 : 5;
-  if (!value || value.length > maximum) return { correct: false, valid: false, message: `Use no more than ${maximum} characters.` };
-  if (!/^-?(?:\d+(?:\.\d*)?|\.\d+|\d+\/\d+)$/.test(value)) return { correct: false, valid: false, message: "Enter a number, decimal, or improper fraction." };
-  if (!rational(value)) return { correct: false, valid: false, message: "Enter a valid response with a nonzero denominator." };
+  if (!value || value.length > MAX_MATH_RESPONSE_LENGTH) return { correct: false, valid: false, message: `Use no more than ${MAX_MATH_RESPONSE_LENGTH} characters.` };
+  const normalized = normalizeMathResponse(value);
+  if (!normalized) return { correct: false, valid: false, message: "Enter a number, decimal, improper fraction, or LaTeX fraction." };
+  if (!rational(normalized)) return { correct: false, valid: false, message: "Enter a valid response with a nonzero denominator." };
   return { correct: false, valid: true };
 }
 
@@ -46,11 +48,11 @@ export function gradeAnswer(question: GradeableQuestion, response: string): Grad
   }
   const validation = validateNumericResponse(response);
   if (!validation.valid) return validation;
-  const entered = rational(response)!;
+  const entered = rational(normalizeMathResponse(response)!)!;
   const correct = question.correctAnswers.some((answer) => {
-    const expected = rational(answer);
+    const expectedResponse = normalizeMathResponse(answer);
+    const expected = expectedResponse ? rational(expectedResponse) : null;
     return expected ? entered[0] === expected[0] && entered[1] === expected[1] : answer.trim() === response.trim();
   });
   return { correct, valid: true };
 }
-

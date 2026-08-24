@@ -29,6 +29,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .metric-card { min-height: 164px; border: 1px solid var(--line); border-radius: 1rem; background: white; padding: 1.4rem; }
 .metric-label { font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .metric-value { margin-top: .6rem; font-family: var(--font-display); font-size: clamp(2.2rem, 4vw, 3.25rem); font-weight: 800; line-height: 1; letter-spacing: -.05em; }
+.metric-card-mastered { border-color: var(--ink); background: var(--ink); color: white; }
+.metric-card-mastered .metric-label, .metric-card-mastered .metric-detail { color: rgb(255 255 255 / .68); }
+.metric-card-mastered .metric-value { color: white; }
 .practice-card { display: grid; width: 100%; grid-template-columns: auto 1fr auto; align-items: center; gap: 1rem; border: 0; border-radius: 1rem; padding: 1.25rem; text-align: left; box-shadow: 0 8px 24px rgb(23 33 38 / .08); transition: transform .18s ease, box-shadow .18s ease; }
 .practice-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgb(23 33 38 / .14); }
 .practice-icon { display: grid; width: 2.6rem; height: 2.6rem; place-items: center; border-radius: .8rem; }
@@ -71,6 +74,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .question-card { margin-top: 1.25rem; border: 1px solid var(--line); border-radius: 1rem; background: white; padding: clamp(1.3rem, 4vw, 2.35rem); box-shadow: 0 8px 30px rgb(23 33 38 / .05); }
 .question-html { overflow-wrap: anywhere; font-size: 1rem; line-height: 1.75; }
 .question-html p + p { margin-top: 1rem; }
+.question-html ul, .question-html ol { margin: 1rem 0; padding-inline-start: 1.5rem; }
+.question-html ul { list-style: disc; }
+.question-html ol { list-style: decimal; }
+.question-html li + li { margin-top: .4rem; }
+.question-html li > ul, .question-html li > ol { margin: .4rem 0; }
 .question-html math { max-width: 100%; overflow-x: auto; }
 .question-html img, .question-html svg { display: block; max-width: 100%; height: auto; margin: 1rem auto; }
 .question-html table { width: 100%; margin: 1rem 0; border-collapse: collapse; }
@@ -80,6 +88,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .answer-option input { position: absolute; opacity: 0; pointer-events: none; }
 .answer-letter { display: grid; width: 2rem; height: 2rem; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: white; font-weight: 800; }
 .answer-option-selected .answer-letter { border-color: var(--blue); background: var(--blue); color: white; }
+.math-answer-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(7.5rem, .55fr); gap: .75rem; }
+.math-answer-input { min-height: 3.5rem; font-size: 1.2rem; font-weight: 700; }
+.math-answer-preview { display: grid; min-width: 0; min-height: 3.5rem; place-items: center; overflow-x: auto; border: 1px solid var(--line); border-radius: .8rem; background: var(--paper); padding: .65rem .85rem; color: var(--ink); font-size: 1.1rem; }
+.math-answer-preview-empty { color: var(--muted); font-size: .72rem; font-weight: 700; }
+.math-expression { display: inline-block; max-width: 100%; }
+.accepted-math-answer { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: 1rem; border-radius: .7rem; background: var(--green-soft); padding: .75rem; color: var(--green); font-size: .875rem; font-weight: 800; }
+.accepted-math-values, .accepted-math-values > span { display: inline-flex; align-items: center; gap: .5rem; }
+.accepted-answer-separator { color: var(--muted); font-size: .75rem; font-weight: 650; }
 .feedback-panel { height: fit-content; border: 1px solid var(--line); border-radius: 1rem; background: white; padding: 1.4rem; }
 .feedback-icon { display: grid; width: 3rem; height: 3rem; place-items: center; border-radius: 50%; }
 .feedback-icon.correct { background: var(--green-soft); color: var(--green); }
@@ -91,5 +107,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .mini-metric strong { display: block; margin-top: .5rem; font-family: var(--font-display); font-size: 2rem; letter-spacing: -.04em; }
 @media (min-width: 1024px) { .setup-grid { grid-template-columns: minmax(0,1fr) 330px; } .quiz-layout { grid-template-columns: minmax(0,1fr) 360px; align-items: start; } .feedback-panel { position: sticky; top: 6.5rem; } }
 @media (min-width: 640px) { .topic-row { grid-template-columns: minmax(0,1fr) 200px 70px; align-items: center; } }
+@media (min-width: 768px) { .mobile-nav { display: none; } }
 @media (min-width: 900px) { .login-page { grid-template-columns: minmax(0,1.12fr) minmax(440px,.88fr); } .login-brand { display: flex; } .page-container { padding: 3.5rem 2.5rem 5rem; } .app-header { padding-inline: 2.5rem; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }

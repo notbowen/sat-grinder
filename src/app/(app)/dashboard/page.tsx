@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     {data.total === 0 && <div className="empty-banner"><BookOpen className="size-6" /><div><p className="font-bold">The question bank is not ready yet.</p><p className="text-sm text-[var(--muted)]">Ask an administrator to run the first authorized sync.</p></div>{current.user.role === "admin" && <Link href="/admin/question-bank" className="secondary-button ml-auto">Open sync controls</Link>}</div>}
 
     <div className="grid gap-4 sm:grid-cols-3">
-      <article className="metric-card bg-[var(--ink)] text-white"><p className="metric-label text-white/60">Mastered</p><p className="metric-value">{data.mastered.toLocaleString()}</p><p className="mt-2 text-sm text-white/60">{percentage}% of your eligible bank</p></article>
+      <article className="metric-card metric-card-mastered"><p className="metric-label">Mastered</p><p className="metric-value">{data.mastered.toLocaleString()}</p><p className="metric-detail mt-2 text-sm">{percentage}% of your eligible bank</p></article>
       <article className="metric-card"><p className="metric-label">Still to go</p><p className="metric-value">{data.remaining.toLocaleString()}</p><p className="mt-2 text-sm text-[var(--muted)]">Across Reading & Writing and Math</p></article>
       <article className="metric-card border-[var(--coral)] bg-[var(--coral-soft)]"><p className="metric-label text-[var(--coral-dark)]">Review pile</p><p className="metric-value text-[var(--coral-dark)]">{data.review.toLocaleString()}</p><p className="mt-2 text-sm text-[var(--coral-dark)]/70">Missed questions awaiting a clean solve</p></article>
     </div>

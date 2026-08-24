@@ -39,4 +39,10 @@ describe("sanitizeQuestionHtml", () => {
     expect(clean).not.toContain("background-image");
     expect(clean).toContain('style="fill:#fff"');
   });
+
+  it("preserves note-taking lists", () => {
+    const clean = sanitizeQuestionHtml("<p>While researching, a student took these notes:</p><ul><li>First note</li><li>Second note</li></ul>");
+
+    expect(clean).toContain("<ul><li>First note</li><li>Second note</li></ul>");
+  });
 });

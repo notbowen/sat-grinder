@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { MAX_MATH_RESPONSE_LENGTH } from "@/lib/math-response";
 import { PracticeError, submitPracticeAnswer } from "@/lib/practice";
 import { getCurrentSession } from "@/lib/session";
 
-const inputSchema = z.object({ questionId: z.string().min(1), response: z.string().max(100) });
+const inputSchema = z.object({ questionId: z.string().min(1), response: z.string().max(MAX_MATH_RESPONSE_LENGTH) });
 
 export async function POST(request: Request, { params }: { params: Promise<{ sessionId: string }> }) {
   const current = await getCurrentSession(); if (!current) return Response.json({ error: "Unauthorized" }, { status: 401 });

@@ -13,10 +13,16 @@ describe("gradeAnswer", () => {
     expect(gradeAnswer({ type: "spr", correctAnswers: ["3"] }, "3.0").correct).toBe(true);
   });
 
-  it("enforces digital SAT response shape and length", () => {
+  it("accepts responses up to 50 characters", () => {
     expect(validateNumericResponse("1/0").valid).toBe(false);
     expect(validateNumericResponse("1.2.3").valid).toBe(false);
-    expect(validateNumericResponse("123456").valid).toBe(false);
-    expect(validateNumericResponse("-12345").valid).toBe(true);
+    expect(validateNumericResponse("1".repeat(50)).valid).toBe(true);
+    expect(validateNumericResponse("1".repeat(51)).valid).toBe(false);
+  });
+
+  it("accepts and grades LaTeX fractions", () => {
+    expect(validateNumericResponse(String.raw`\frac{3}{4}`).valid).toBe(true);
+    expect(gradeAnswer({ type: "spr", correctAnswers: ["0.75"] }, String.raw`\frac{3}{4}`).correct).toBe(true);
+    expect(gradeAnswer({ type: "spr", correctAnswers: ["-2/3"] }, String.raw`-\frac{4}{6}`).correct).toBe(true);
   });
 });

@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       answer_attempts: {
         Row: {
+          active_duration_ms: number | null
           attempt_number: number
           created_at: string
           id: string
@@ -26,6 +27,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_duration_ms?: number | null
           attempt_number: number
           created_at?: string
           id: string
@@ -36,6 +38,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_duration_ms?: number | null
           attempt_number?: number
           created_at?: string
           id?: string
@@ -453,7 +456,10 @@ export type Database = {
         Returns: undefined
       }
       finalize_question_sync: { Args: { p_run_id: string }; Returns: Json }
-      get_dashboard: { Args: never; Returns: Json }
+      get_dashboard: {
+        Args: { p_timezone?: string; p_window?: string }
+        Returns: Json
+      }
       get_practice_pool: { Args: never; Returns: Json }
       get_practice_session: { Args: { p_session_id: string }; Returns: Json }
       start_practice: {
@@ -462,6 +468,7 @@ export type Database = {
       }
       submit_practice_answer: {
         Args: {
+          p_active_duration_ms?: number | null
           p_question_id: string
           p_response: string
           p_session_id: string
@@ -600,4 +607,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

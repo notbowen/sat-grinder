@@ -22,6 +22,10 @@ describe("Supabase API client", () => {
   it("surfaces RPC errors", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message: "Authentication required." } });
     await expect(getDashboard()).rejects.toThrow("Authentication required.");
+    expect(mocks.rpc).toHaveBeenCalledWith("get_dashboard", {
+      p_window: "30d",
+      p_timezone: expect.any(String),
+    });
   });
 
   it("loads the subject-specific practice pool", async () => {
@@ -76,8 +80,14 @@ describe("Supabase API client", () => {
     mocks.rpc.mockResolvedValue({ data: { correct: true, rationaleHtml: `/question-assets/${path}`, correctAnswers: ["A"] }, error: null });
     mocks.createSignedUrls.mockResolvedValue({ data: [{ path, signedUrl: "https://signed.example/rationale" }], error: null });
 
-    const result = await submitPracticeAnswer("session", "question", "A");
+    const result = await submitPracticeAnswer("session", "question", "A", 42_000);
 
     expect(result.rationaleHtml).toBe("https://signed.example/rationale");
+    expect(mocks.rpc).toHaveBeenCalledWith("submit_practice_answer", {
+      p_session_id: "session",
+      p_question_id: "question",
+      p_response: "A",
+      p_active_duration_ms: 42_000,
+    });
   });
 });

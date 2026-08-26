@@ -9,6 +9,7 @@ import { HighlightableQuestionHtml } from "@/components/highlightable-question-h
 import { MathExpression } from "@/components/math-expression";
 import { QuestionHtml } from "@/components/question-html";
 import { MAX_MATH_RESPONSE_LENGTH } from "@/lib/math-response";
+import { useActiveAttemptTimer } from "@/lib/use-active-attempt-timer";
 
 type Question = {
   id: string; displayId: string; section: "math" | "reading-writing"; domainName: string; skillName: string; difficulty: "medium" | "hard";
@@ -19,6 +20,7 @@ type Feedback = { correct: boolean; message: string; firstAttempt?: boolean; com
 export function QuizCard({ sessionId, question, resolved, total, onRefresh }: { sessionId: string; question: Question; resolved: number; total: number; onRefresh: () => Promise<void> }) {
   const router = useRouter(); const [response, setResponse] = useState(""); const [feedback, setFeedback] = useState<Feedback | null>(null); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const [abandoning, setAbandoning] = useState(false);
   const [eliminatorEnabled, setEliminatorEnabled] = useState(false); const [eliminatedChoices, setEliminatedChoices] = useState<string[]>([]); const [eliminatorAnnouncement, setEliminatorAnnouncement] = useState("");
+  const attemptTimer = useActiveAttemptTimer(`${sessionId}:${question.id}`);
 
   useLayoutEffect(() => {
     const validLetters = new Set(question.answerOptions.map((option) => option.letter));
@@ -37,13 +39,20 @@ export function QuizCard({ sessionId, question, resolved, total, onRefresh }: { 
     setEliminatedChoices(updated);
     try { sessionStorage.setItem(`sat-grinder:eliminated:${sessionId}:${question.id}`, JSON.stringify(updated)); } catch { /* Choice elimination still works without persistence. */ }
     if (willEliminate && response === letter) setResponse("");
-    if (feedback && !feedback.correct) setFeedback(null);
+    if (feedback && !feedback.correct) { setFeedback(null); attemptTimer.resume(); }
     setEliminatorAnnouncement(`${letter} ${willEliminate ? "crossed out" : "restored"}.`);
   }
   async function check() {
     setLoading(true); setError("");
-    try { setFeedback(await submitPracticeAnswer(sessionId, question.id, response)); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "Your answer could not be checked."); }
+    const activeDurationMs = attemptTimer.pause();
+    try {
+      setFeedback(await submitPracticeAnswer(sessionId, question.id, response, activeDurationMs));
+      attemptTimer.reset(false);
+    }
+    catch (cause) {
+      attemptTimer.resume();
+      setError(cause instanceof Error ? cause.message : "Your answer could not be checked.");
+    }
     finally { setLoading(false); }
   }
   async function abandon() {
@@ -78,7 +87,7 @@ export function QuizCard({ sessionId, question, resolved, total, onRefresh }: { 
                 const showEliminationControl = eliminatorEnabled || eliminated;
                 return <div key={option.letter} className={`answer-option-row ${showEliminationControl ? "answer-option-row-with-tool" : ""} ${eliminated ? "answer-option-row-eliminated" : ""}`}>
                   <label className={`answer-option ${response === option.letter ? "answer-option-selected" : ""}`}>
-                    <input type="radio" name="answer" value={option.letter} checked={response === option.letter} disabled={eliminated} onChange={() => { setResponse(option.letter); if (feedback && !feedback.correct) setFeedback(null); }} />
+                    <input type="radio" name="answer" value={option.letter} checked={response === option.letter} disabled={eliminated} onChange={() => { setResponse(option.letter); if (feedback && !feedback.correct) { setFeedback(null); attemptTimer.resume(); } }} />
                     <span className="answer-letter">{option.letter}</span>
                     <span className="answer-option-content"><QuestionHtml html={option.content} /></span>
                   </label>
@@ -90,14 +99,14 @@ export function QuizCard({ sessionId, question, resolved, total, onRefresh }: { 
             </div>
             <span className="sr-only" aria-live="polite">{eliminatorAnnouncement}</span>
           </fieldset>
-          : <div className="max-w-2xl"><label className="form-label" htmlFor={`answer-${question.id}`}>Your answer</label><div className="math-answer-row mt-2"><input id={`answer-${question.id}`} className="form-input math-answer-input" value={response} maxLength={MAX_MATH_RESPONSE_LENGTH} disabled={feedback?.correct} onChange={(event) => { setResponse(event.target.value); if (feedback && !feedback.correct) setFeedback(null); }} placeholder="e.g. 5/3 or 0.75" inputMode="text" autoCapitalize="none" autoComplete="off" spellCheck={false} /><span className={`math-answer-preview ${response.trim() ? "" : "math-answer-preview-empty"}`} aria-label="Rendered answer">{response.trim() ? <MathExpression value={response} /> : "Rendered answer"}</span></div><p className="mt-2 text-sm text-[var(--muted)]">The rendered version updates as you type. Use up to {MAX_MATH_RESPONSE_LENGTH} characters.</p></div>}
+          : <div className="max-w-2xl"><label className="form-label" htmlFor={`answer-${question.id}`}>Your answer</label><div className="math-answer-row mt-2"><input id={`answer-${question.id}`} className="form-input math-answer-input" value={response} maxLength={MAX_MATH_RESPONSE_LENGTH} disabled={feedback?.correct} onChange={(event) => { setResponse(event.target.value); if (feedback && !feedback.correct) { setFeedback(null); attemptTimer.resume(); } }} placeholder="e.g. 5/3 or 0.75" inputMode="text" autoCapitalize="none" autoComplete="off" spellCheck={false} /><span className={`math-answer-preview ${response.trim() ? "" : "math-answer-preview-empty"}`} aria-label="Rendered answer">{response.trim() ? <MathExpression value={response} /> : "Rendered answer"}</span></div><p className="mt-2 text-sm text-[var(--muted)]">The rendered version updates as you type. Use up to {MAX_MATH_RESPONSE_LENGTH} characters.</p></div>}
         </div>
       </article>
     </section>
 
     <aside className="feedback-panel">
       {!feedback && <><p className="eyebrow">Check your work</p><h2 className="section-title">Ready to commit?</h2><p className="mt-3 text-sm leading-6 text-[var(--muted)]">You&apos;ll get feedback immediately. If it&apos;s wrong, adjust your answer and try again.</p>{error && <p className="form-error mt-4" role="alert">{error}</p>}<button className="primary-button mt-6 w-full" onClick={check} disabled={loading || !response}>{loading ? <LoaderCircle className="size-5 animate-spin" /> : "Check answer"}</button></>}
-      {feedback && !feedback.correct && <><span className="feedback-icon incorrect"><RotateCcw className="size-6" /></span><p className="eyebrow mt-5 text-[var(--coral-dark)]">Keep going</p><h2 className="section-title">Not quite yet.</h2><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{feedback.message}</p><button className="secondary-button mt-6 w-full" onClick={() => setFeedback(null)}>Try again</button></>}
+      {feedback && !feedback.correct && <><span className="feedback-icon incorrect"><RotateCcw className="size-6" /></span><p className="eyebrow mt-5 text-[var(--coral-dark)]">Keep going</p><h2 className="section-title">Not quite yet.</h2><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{feedback.message}</p><button className="secondary-button mt-6 w-full" onClick={() => { setFeedback(null); attemptTimer.resume(); }}>Try again</button></>}
       {feedback?.correct && <><span className="feedback-icon correct"><CheckCircle2 className="size-6" /></span><p className="eyebrow mt-5 text-[var(--green)]">Correct</p><h2 className="section-title">{feedback.firstAttempt ? "Mastered." : "You got there."}</h2><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{feedback.message}</p>{feedback.correctAnswers && (question.type === "spr" ? <div className="accepted-math-answer"><span>Accepted answer{feedback.correctAnswers.length === 1 ? "" : "s"}:</span><span className="accepted-math-values">{feedback.correctAnswers.map((answer, index) => <span key={`${answer}:${index}`}>{index > 0 && <span className="accepted-answer-separator">or</span>}<MathExpression value={answer} /></span>)}</span></div> : <p className="mt-4 rounded-lg bg-[var(--green-soft)] p-3 text-sm font-bold text-[var(--green)]">Accepted answer{feedback.correctAnswers.length === 1 ? "" : "s"}: {feedback.correctAnswers.join(", ")}</p>)}<div className="mt-6 border-t border-[var(--line)] pt-5"><p className="eyebrow">Explanation</p><QuestionHtml html={feedback.rationaleHtml} className="mt-3 text-sm" /></div><button className="primary-button mt-6 w-full" onClick={next}>{feedback.completed ? "View results" : <>Next question <ArrowRight className="size-4" /></>}</button></>}
     </aside>
   </div>;

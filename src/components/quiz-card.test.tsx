@@ -4,6 +4,13 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QuizCard } from "@/components/quiz-card";
 
+const mocks = vi.hoisted(() => ({ submitPracticeAnswer: vi.fn(), abandonPracticeSession: vi.fn() }));
+
+vi.mock("@/lib/supabase-api", () => ({
+  submitPracticeAnswer: mocks.submitPracticeAnswer,
+  abandonPracticeSession: mocks.abandonPracticeSession,
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
 }));
@@ -29,6 +36,8 @@ const question = {
 afterEach(() => {
   cleanup();
   sessionStorage.clear();
+  mocks.submitPracticeAnswer.mockReset();
+  mocks.abandonPracticeSession.mockReset();
 });
 
 describe("QuizCard choice eliminator", () => {
@@ -80,5 +89,17 @@ describe("QuizCard choice eliminator", () => {
     expect(optionB?.disabled).toBe(true);
     expect(screen.getByRole("button", { name: "Undo elimination of choice B" })).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Cross out choice A" })).toBeNull();
+  });
+
+  it("submits active time with every answer attempt", async () => {
+    mocks.submitPracticeAnswer.mockResolvedValue({ correct: false, message: "Try again." });
+    const { container } = render(<QuizCard sessionId="session-1" question={question} resolved={0} total={1} onRefresh={async () => {}} />);
+
+    fireEvent.click(container.querySelector<HTMLInputElement>('input[value="A"]') as HTMLInputElement);
+    fireEvent.click(screen.getByRole("button", { name: "Check answer" }));
+
+    await vi.waitFor(() => expect(mocks.submitPracticeAnswer).toHaveBeenCalledWith(
+      "session-1", "question-1", "A", expect.any(Number),
+    ));
   });
 });

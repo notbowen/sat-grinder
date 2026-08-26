@@ -12,6 +12,7 @@ declare
   session_id uuid;
   pool jsonb;
   feedback jsonb;
+  dashboard jsonb;
   failed_as_expected boolean;
 begin
   insert into auth.users (
@@ -37,8 +38,13 @@ begin
   );
 
   perform set_config('request.jwt.claim.sub', learner_a::text, true);
-  if (public.get_dashboard() ->> 'remaining')::integer < 1 then
-    raise exception 'Dashboard aggregation returned an invalid remaining count.';
+  dashboard := public.get_dashboard('30d', 'Asia/Singapore');
+  if (dashboard #>> '{snapshot,total}')::integer < 1
+    or (dashboard #>> '{snapshot,total}')::integer <>
+      (dashboard #>> '{snapshot,mastered}')::integer
+      + (dashboard #>> '{snapshot,review}')::integer
+      + (dashboard #>> '{snapshot,unseen}')::integer then
+    raise exception 'Dashboard coverage did not partition the eligible bank.';
   end if;
   pool := public.get_practice_pool();
   if (pool ->> 'math')::integer < 1 or (pool ->> 'total')::integer < 1 then
@@ -90,7 +96,7 @@ begin
   if not failed_as_expected then raise exception 'A second user read another user''s session.'; end if;
 
   perform set_config('request.jwt.claim.sub', learner_a::text, true);
-  feedback := public.submit_practice_answer(session_id, test_question, 'B');
+  feedback := public.submit_practice_answer(session_id, test_question, 'B', 42000);
   if (feedback ->> 'correct')::boolean
     or feedback ? 'correctAnswers' or feedback ? 'rationaleHtml' then
     raise exception 'Incorrect-answer feedback was wrong or leaked protected content.';
@@ -101,13 +107,22 @@ begin
       and status = 'review' and first_attempt_misses = 1
   ) then raise exception 'First miss did not create review progress.'; end if;
 
-  feedback := public.submit_practice_answer(session_id, test_question, 'A');
+  feedback := public.submit_practice_answer(session_id, test_question, 'A', 18000);
   if not (feedback ->> 'correct')::boolean or not (feedback ->> 'completed')::boolean
     or not feedback ? 'correctAnswers' or not feedback ? 'rationaleHtml' then
     raise exception 'Correct feedback or completion state was invalid.';
   end if;
   if (select count(*) <> 2 from public.answer_attempts a where a.session_id = integration.session_id) then
     raise exception 'The quiz did not record exactly two attempts.';
+  end if;
+  if (select sum(active_duration_ms) <> 60000 from public.answer_attempts a where a.session_id = integration.session_id) then
+    raise exception 'Active attempt timing was not stored correctly.';
+  end if;
+  dashboard := public.get_dashboard('30d', 'Asia/Singapore');
+  if (dashboard #>> '{summary,activeTimeMs}')::integer < 60000
+    or (dashboard #>> '{summary,completed}')::integer < 1
+    or (dashboard #>> '{reviewAnalytics,total}')::integer < 1 then
+    raise exception 'Dashboard performance analytics were not aggregated correctly.';
   end if;
   if not exists (
     select 1 from public.user_question_progress

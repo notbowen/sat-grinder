@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeQuestionHtml } from "@/lib/question-bank/sync";
+import { runQuestionBankSync, sanitizeQuestionHtml } from "@/lib/question-bank/sync";
 
 describe("sanitizeQuestionHtml", () => {
   it("preserves the safe inline SVG used by graph questions", () => {
@@ -82,5 +82,13 @@ describe("sanitizeQuestionHtml", () => {
     const clean = sanitizeQuestionHtml('<math alttext="angle upper Q"><mo>∠</mo><mi>Q</mi></math>');
 
     expect(clean).toContain('<mo>∠</mo><mi>Q</mi>');
+  });
+
+  it("requires the explicit College Board authorization assertion", async () => {
+    const previous = process.env.COLLEGE_BOARD_EQB_AUTHORIZED;
+    delete process.env.COLLEGE_BOARD_EQB_AUTHORIZED;
+    await expect(runQuestionBankSync("manual-cli")).rejects.toThrow("confirming written content authorization");
+    if (previous === undefined) delete process.env.COLLEGE_BOARD_EQB_AUTHORIZED;
+    else process.env.COLLEGE_BOARD_EQB_AUTHORIZED = previous;
   });
 });

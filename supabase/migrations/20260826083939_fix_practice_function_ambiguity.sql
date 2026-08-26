@@ -1,0 +1,2 @@
+-- Recorded remotely during migration validation. The corrected definitions are consolidated
+-- into 20260826083037_practice_functions.sql for reproducible fresh deployments.

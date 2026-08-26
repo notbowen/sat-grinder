@@ -1,5 +1,12 @@
-import "dotenv/config";
-import { createSyncRun, runQuestionBankSync } from "../src/lib/question-bank/sync";
+import { runQuestionBankSync } from "../src/lib/question-bank/sync";
 
-async function main() { const runId = await createSyncRun(null); console.log(`Starting authorized question-bank sync ${runId}...`); await runQuestionBankSync(runId); console.log("Question-bank sync completed."); }
-main().catch((error) => { console.error(error instanceof Error ? error.message : error); process.exit(1); });
+async function main() {
+  console.log("Starting authorized College Board question-bank synchronization...");
+  const result = await runQuestionBankSync(process.env.GITHUB_ACTIONS ? "github-action" : "manual-cli");
+  console.log(`Imported ${result.imported} questions; excluded ${result.activeExcluded} active-test questions from practice.`);
+}
+
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+});

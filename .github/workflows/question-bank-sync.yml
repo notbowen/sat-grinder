@@ -1,0 +1,61 @@
+name: Sync College Board questions
+
+on:
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: college-board-question-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      COLLEGE_BOARD_EQB_AUTHORIZED: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate required configuration
+        run: |
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_SERVICE_ROLE_KEY"
+
+      - name: Synchronize the question bank
+        run: pnpm question-bank:sync | tee sync-output.log
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "## College Board question sync"
+            echo
+            echo "- Run: $GITHUB_RUN_ID"
+            echo "- Result: ${{ job.status }}"
+            echo "- Scheduled time: 19:00 UTC / 03:00 Singapore"
+            if test -f sync-output.log; then
+              echo
+              echo '```text'
+              tail -20 sync-output.log
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

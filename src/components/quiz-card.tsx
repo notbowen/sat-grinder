@@ -3,7 +3,8 @@
 import { useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Highlighter, LoaderCircle, RotateCcw, X } from "lucide-react";
-import type { AnswerOption } from "@/db/schema";
+import type { AnswerOption } from "@/lib/supabase-api";
+import { abandonPracticeSession, submitPracticeAnswer } from "@/lib/supabase-api";
 import { HighlightableQuestionHtml } from "@/components/highlightable-question-html";
 import { MathExpression } from "@/components/math-expression";
 import { QuestionHtml } from "@/components/question-html";
@@ -15,7 +16,7 @@ type Question = {
 };
 type Feedback = { correct: boolean; message: string; firstAttempt?: boolean; completed?: boolean; rationaleHtml?: string; correctAnswers?: string[] };
 
-export function QuizCard({ sessionId, question, resolved, total }: { sessionId: string; question: Question; resolved: number; total: number }) {
+export function QuizCard({ sessionId, question, resolved, total, onRefresh }: { sessionId: string; question: Question; resolved: number; total: number; onRefresh: () => Promise<void> }) {
   const router = useRouter(); const [response, setResponse] = useState(""); const [feedback, setFeedback] = useState<Feedback | null>(null); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const [abandoning, setAbandoning] = useState(false);
   const [eliminatorEnabled, setEliminatorEnabled] = useState(false); const [eliminatedChoices, setEliminatedChoices] = useState<string[]>([]); const [eliminatorAnnouncement, setEliminatorAnnouncement] = useState("");
 
@@ -41,17 +42,17 @@ export function QuizCard({ sessionId, question, resolved, total }: { sessionId: 
   }
   async function check() {
     setLoading(true); setError("");
-    const request = await fetch(`/api/practice/${sessionId}/answer`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ questionId: question.id, response }) });
-    const data = await request.json(); setLoading(false);
-    if (!request.ok) { setError(data.error || "Your answer could not be checked."); return; }
-    setFeedback(data);
+    try { setFeedback(await submitPracticeAnswer(sessionId, question.id, response)); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Your answer could not be checked."); }
+    finally { setLoading(false); }
   }
   async function abandon() {
     if (!window.confirm("Abandon this quiz? Submitted attempts will be kept and untouched questions will return to your pool.")) return;
-    setAbandoning(true); const request = await fetch(`/api/practice/${sessionId}/abandon`, { method: "POST" });
-    if (request.ok) { router.replace("/dashboard"); router.refresh(); } else { setAbandoning(false); setError("The quiz could not be abandoned."); }
+    setAbandoning(true);
+    try { await abandonPracticeSession(sessionId); router.replace("/dashboard/"); }
+    catch (cause) { setAbandoning(false); setError(cause instanceof Error ? cause.message : "The quiz could not be abandoned."); }
   }
-  function next() { router.refresh(); }
+  async function next() { setLoading(true); await onRefresh(); }
 
   return <div className="quiz-layout">
     <section>

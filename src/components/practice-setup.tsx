@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, LoaderCircle } from "lucide-react";
+import { startPractice } from "@/lib/supabase-api";
 
 type Domain = { code: string; name: string; section: "math" | "reading-writing"; count: number; skills: { code: string; name: string; count: number }[] };
 
@@ -30,10 +31,13 @@ export function PracticeSetup({ mode, eligible, catalog = [] }: { mode: "random"
 
   async function start() {
     setError(""); setLoading(true);
-    const response = await fetch("/api/practice/start", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode, count, topics: selected }) });
-    const data = await response.json(); setLoading(false);
-    if (!response.ok) { setError(data.error || "The quiz could not be created."); return; }
-    router.push(`/practice/${data.sessionId}`);
+    try {
+      const sessionId = await startPractice(mode, count, selected);
+      router.push(`/practice/session/?session=${encodeURIComponent(sessionId)}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The quiz could not be created.");
+      setLoading(false);
+    }
   }
 
   return <div className="setup-grid">

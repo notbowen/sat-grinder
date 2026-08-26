@@ -1,0 +1,2 @@
+-- Recorded remotely during migration validation. The deny policy is consolidated into
+-- 20260826083019_schema.sql for reproducible fresh deployments.

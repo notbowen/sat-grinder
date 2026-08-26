@@ -33,7 +33,7 @@ afterEach(() => {
 
 describe("QuizCard choice eliminator", () => {
   it("crosses out and restores a choice without selecting it", () => {
-    const { container } = render(<QuizCard sessionId="session-1" question={question} resolved={0} total={1} />);
+    const { container } = render(<QuizCard sessionId="session-1" question={question} resolved={0} total={1} onRefresh={async () => {}} />);
 
     expect(screen.queryByRole("button", { name: "Cross out choice A" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Eliminate choices" }));
@@ -55,7 +55,7 @@ describe("QuizCard choice eliminator", () => {
   });
 
   it("clears a selected answer when that choice is crossed out", () => {
-    const { container } = render(<QuizCard sessionId="session-1" question={question} resolved={0} total={1} />);
+    const { container } = render(<QuizCard sessionId="session-1" question={question} resolved={0} total={1} onRefresh={async () => {}} />);
     const optionB = container.querySelector<HTMLInputElement>('input[value="B"]');
 
     expect(optionB).not.toBeNull();
@@ -74,7 +74,7 @@ describe("QuizCard choice eliminator", () => {
   it("restores valid eliminated choices for the current quiz session", () => {
     sessionStorage.setItem("sat-grinder:eliminated:session-1:question-1", '["B","unknown"]');
 
-    const { container } = render(<QuizCard sessionId="session-1" question={question} resolved={0} total={1} />);
+    const { container } = render(<QuizCard sessionId="session-1" question={question} resolved={0} total={1} onRefresh={async () => {}} />);
     const optionB = container.querySelector<HTMLInputElement>('input[value="B"]');
 
     expect(optionB?.disabled).toBe(true);

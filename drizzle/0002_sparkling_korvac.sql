@@ -1,2 +1,0 @@
-CREATE UNIQUE INDEX `idx_one_active_session_per_user` ON `practice_sessions` (`user_id`) WHERE "practice_sessions"."status" = 'active';--> statement-breakpoint
-CREATE UNIQUE INDEX `idx_one_running_sync` ON `sync_runs` (`status`) WHERE "sync_runs"."status" = 'running';

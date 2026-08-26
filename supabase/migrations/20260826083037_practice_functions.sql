@@ -182,7 +182,7 @@ begin
   return pg_catalog.jsonb_build_object(
     'total', total_count,
     'mastered', mastered_count,
-    'remaining', pg_catalog.greatest(0, total_count - mastered_count),
+    'remaining', greatest(0, total_count - mastered_count),
     'review', review_count,
     'sections', sections,
     'topics', topics,

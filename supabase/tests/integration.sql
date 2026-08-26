@@ -40,6 +40,9 @@ begin
   );
 
   perform set_config('request.jwt.claim.sub', learner_a::text, true);
+  if (public.get_dashboard() ->> 'remaining')::integer < 1 then
+    raise exception 'Dashboard aggregation returned an invalid remaining count.';
+  end if;
   session_id := public.start_practice('topics', 1, array['skill:DBTESTSKILL']);
 
   failed_as_expected := false;

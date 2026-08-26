@@ -70,6 +70,7 @@ export function sanitizeQuestionHtml(html: string) {
     allowedAttributes: {
       "*": ["class", "id", "aria-hidden", "aria-label", "role"],
       p: ["style"],
+      span: ["style"],
       math: ["xmlns", "alttext", "display"],
       mfenced: ["open", "close", "separators"],
       img: ["src", "alt", "width", "height"],
@@ -115,6 +116,9 @@ export function sanitizeQuestionHtml(html: string) {
         "text-anchor": [/^(?:start|middle|end)$/],
         "dominant-baseline": [/^[a-z-]+$/],
         "clip-path": [localSvgReference],
+      },
+      span: {
+        "text-decoration": [/^underline$/],
       },
     },
     transformTags: { "*": filterSvgReferences },

@@ -46,6 +46,24 @@ describe("sanitizeQuestionHtml", () => {
     expect(clean).toContain("<ul><li>First note</li><li>Second note</li></ul>");
   });
 
+  it("preserves both forms of underlined referenced content", () => {
+    const clean = sanitizeQuestionHtml(`<p>
+      <span style="text-decoration: underline;" role="region" aria-label="Referenced Content">Styled claim</span>
+      <span role="region" aria-label="Referenced Content"><u>Element claim</u></span>
+    </p>`);
+
+    expect(clean).toContain('style="text-decoration:underline"');
+    expect(clean).toContain('<u>Element claim</u>');
+  });
+
+  it("removes unsafe styles from underlined referenced content", () => {
+    const clean = sanitizeQuestionHtml('<span style="text-decoration: underline; background-image: url(javascript:alert(1))">Claim</span>');
+
+    expect(clean).toContain('style="text-decoration:underline"');
+    expect(clean).not.toContain("background-image");
+    expect(clean).not.toContain("javascript");
+  });
+
   it("preserves MathML absolute-value fences", () => {
     const clean = sanitizeQuestionHtml('<math><mfenced open="|" close="|"><mi>x</mi></mfenced></math>');
 

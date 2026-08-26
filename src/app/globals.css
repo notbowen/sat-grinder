@@ -80,6 +80,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .question-html ol { list-style: decimal; }
 .question-html li + li { margin-top: .4rem; }
 .question-html li > ul, .question-html li > ol { margin: .4rem 0; }
+.question-html [aria-label="Referenced Content"] { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .12em; }
 .question-html math { max-width: 100%; overflow-x: auto; }
 .question-html img, .question-html svg { display: block; max-width: 100%; height: auto; margin: 1rem auto; }
 .question-html table { width: 100%; margin: 1rem 0; border-collapse: collapse; }

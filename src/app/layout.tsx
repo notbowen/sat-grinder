@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "SAT Grinder", template: "%s · SAT Grinder" },
-  description: "Master medium and hard SAT questions, one topic at a time.",
+  description: "Master medium and hard SAT questions in English, Math, or mixed practice sets.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

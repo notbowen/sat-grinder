@@ -191,7 +191,7 @@ begin
 end;
 $$;
 
-create or replace function public.get_topic_catalog()
+create or replace function public.get_practice_pool()
 returns jsonb
 language sql
 stable
@@ -201,30 +201,19 @@ as $$
   with caller as (
     select auth.uid() as id
   ), eligible as (
-    select q.section, q.domain_code, q.domain_name, q.skill_code, q.skill_name
+    select q.section
     from public.questions q
     cross join caller u
     left join public.user_question_progress p on p.question_id = q.id and p.user_id = u.id
     where u.id is not null and not q.is_retired and not q.is_active_test
       and (p.status is null or p.status <> 'mastered')
-  ), skill_counts as (
-    select section, domain_code, domain_name, skill_code, skill_name, count(*)::integer as count
-    from eligible group by section, domain_code, domain_name, skill_code, skill_name
-  ), domain_counts as (
-    select section, domain_code, domain_name, sum(count)::integer as count
-    from skill_counts group by section, domain_code, domain_name
-  ), skills as (
-    select section, domain_code,
-      pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
-        'code', skill_code, 'name', skill_name, 'count', count
-      ) order by skill_name) as items
-    from skill_counts group by section, domain_code
   )
-  select coalesce(pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
-    'code', d.domain_code, 'name', d.domain_name, 'section', d.section,
-    'count', d.count, 'skills', s.items
-  ) order by d.section, d.domain_name), '[]'::jsonb)
-  from domain_counts d join skills s using (section, domain_code);
+  select pg_catalog.jsonb_build_object(
+    'total', count(*)::integer,
+    'math', count(*) filter (where section = 'math'),
+    'readingWriting', count(*) filter (where section = 'reading-writing')
+  )
+  from eligible;
 $$;
 
 create or replace function public.start_practice(p_mode text, p_count integer, p_filters text[] default '{}'::text[])
@@ -243,11 +232,13 @@ declare
   available integer;
 begin
   if caller_id is null then raise exception 'Authentication required.'; end if;
-  if p_mode not in ('random', 'topics') then raise exception 'Choose a valid practice mode.'; end if;
+  if p_mode is distinct from 'random' then raise exception 'Choose a valid practice mode.'; end if;
   if p_count is null or p_count < 1 or p_count > 50 then raise exception 'Choose between 1 and 50 questions.'; end if;
-  if p_mode = 'topics' and cardinality(filters) = 0 then raise exception 'Choose at least one topic.'; end if;
-  if cardinality(filters) > 30 or exists (select 1 from unnest(filters) f where char_length(f) > 100) then
-    raise exception 'Choose a valid topic selection.';
+  if cardinality(filters) > 1 or exists (
+    select 1 from unnest(filters) filter
+    where filter not in ('section:math', 'section:reading-writing')
+  ) then
+    raise exception 'Choose a valid subject selection.';
   end if;
 
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(caller_id::text, 0));
@@ -263,12 +254,7 @@ begin
     left join public.user_question_progress p on p.question_id = q.id and p.user_id = caller_id
     where not q.is_retired and not q.is_active_test
       and (p.status is null or p.status <> 'mastered')
-      and (cardinality(filters) = 0 or exists (
-        select 1 from unnest(filters) filter
-        where filter = 'section:' || q.section
-          or filter = 'domain:' || q.domain_code
-          or filter = 'skill:' || q.skill_code
-      ))
+      and (cardinality(filters) = 0 or filters[1] = 'section:' || q.section)
     order by pg_catalog.random()
     limit p_count
   ) candidate;
@@ -279,7 +265,7 @@ begin
   end if;
 
   insert into public.practice_sessions (id, user_id, mode, requested_count, topic_filters)
-  values (session_id, caller_id, p_mode, p_count, filters);
+  values (session_id, caller_id, 'random', p_count, filters);
   insert into public.practice_session_items (session_id, question_id, position)
   select session_id, item.question_id, (item.ordinality - 1)::integer
   from unnest(question_ids) with ordinality item(question_id, ordinality);
@@ -476,86 +462,14 @@ begin
 end;
 $$;
 
-create or replace function public.claim_legacy_history(p_token text)
-returns jsonb
-language plpgsql
-volatile
-security definer
-set search_path = ''
-as $$
-<<claim_legacy_history>>
-declare
-  caller_id uuid := auth.uid();
-  claim private.legacy_claims%rowtype;
-begin
-  if caller_id is null then raise exception 'Authentication required.'; end if;
-  if p_token is null or char_length(p_token) < 32 then raise exception 'Enter the complete claim token.'; end if;
-
-  select * into claim from private.legacy_claims
-  where token_hash = extensions.digest(pg_catalog.convert_to(p_token, 'UTF8'), 'sha256')
-    and claimed_at is null
-  for update;
-  if not found then raise exception 'That claim token is invalid or has already been used.'; end if;
-  if exists (select 1 from public.practice_sessions s where s.user_id = caller_id)
-    or exists (select 1 from public.user_question_progress p where p.user_id = caller_id) then
-    raise exception 'Claim your old history before starting new practice.';
-  end if;
-
-  insert into public.practice_sessions
-    (id, user_id, mode, requested_count, status, topic_filters, created_at, completed_at, abandoned_at)
-  select x.id, caller_id, x.mode, x.requested_count, x.status, x.topic_filters,
-    x.created_at, x.completed_at, x.abandoned_at
-  from pg_catalog.jsonb_to_recordset(claim.payload -> 'practice_sessions') as x(
-    id uuid, mode text, requested_count integer, status text, topic_filters text[],
-    created_at timestamptz, completed_at timestamptz, abandoned_at timestamptz
-  );
-
-  insert into public.practice_session_items
-    (session_id, question_id, position, first_attempt_correct, retry_count, resolved_at)
-  select x.session_id, x.question_id, x.position, x.first_attempt_correct, x.retry_count, x.resolved_at
-  from pg_catalog.jsonb_to_recordset(claim.payload -> 'practice_session_items') as x(
-    session_id uuid, question_id uuid, position integer, first_attempt_correct boolean,
-    retry_count integer, resolved_at timestamptz
-  );
-
-  insert into public.answer_attempts
-    (id, session_id, question_id, user_id, attempt_number, response, is_correct, created_at)
-  select x.id, x.session_id, x.question_id, caller_id, x.attempt_number, x.response, x.is_correct, x.created_at
-  from pg_catalog.jsonb_to_recordset(claim.payload -> 'answer_attempts') as x(
-    id uuid, session_id uuid, question_id uuid, attempt_number integer,
-    response text, is_correct boolean, created_at timestamptz
-  );
-
-  insert into public.user_question_progress
-    (user_id, question_id, status, first_attempt_misses, last_answered_at, mastered_at)
-  select caller_id, x.question_id, x.status, x.first_attempt_misses, x.last_answered_at, x.mastered_at
-  from pg_catalog.jsonb_to_recordset(claim.payload -> 'user_question_progress') as x(
-    question_id uuid, status text, first_attempt_misses integer,
-    last_answered_at timestamptz, mastered_at timestamptz
-  );
-
-  update public.profiles set legacy_claimed_at = pg_catalog.clock_timestamp(), updated_at = pg_catalog.clock_timestamp()
-  where id = caller_id;
-  update private.legacy_claims set token_hash = null, claimed_by = caller_id,
-    claimed_at = pg_catalog.clock_timestamp() where id = claim.id;
-
-  return pg_catalog.jsonb_build_object(
-    'sessions', pg_catalog.jsonb_array_length(claim.payload -> 'practice_sessions'),
-    'attempts', pg_catalog.jsonb_array_length(claim.payload -> 'answer_attempts'),
-    'progress', pg_catalog.jsonb_array_length(claim.payload -> 'user_question_progress')
-  );
-end;
-$$;
-
 revoke execute on function public.get_dashboard() from public, anon;
-revoke execute on function public.get_topic_catalog() from public, anon;
+revoke execute on function public.get_practice_pool() from public, anon;
 revoke execute on function public.start_practice(text, integer, text[]) from public, anon;
 revoke execute on function public.get_practice_session(uuid) from public, anon;
 revoke execute on function public.submit_practice_answer(uuid, uuid, text) from public, anon;
 revoke execute on function public.abandon_practice_session(uuid) from public, anon;
-revoke execute on function public.claim_legacy_history(text) from public, anon;
 
-grant execute on function public.get_dashboard(), public.get_topic_catalog(),
+grant execute on function public.get_dashboard(), public.get_practice_pool(),
   public.start_practice(text, integer, text[]), public.get_practice_session(uuid),
-  public.submit_practice_answer(uuid, uuid, text), public.abandon_practice_session(uuid),
-  public.claim_legacy_history(text) to authenticated;
+  public.submit_practice_answer(uuid, uuid, text), public.abandon_practice_session(uuid)
+  to authenticated;

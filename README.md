@@ -52,12 +52,6 @@ Connect the GitHub repository to a Pages project with:
 
 The export includes `public/_headers`, which supplies the security headers and permits only this Supabase project's HTTPS and WebSocket origins. Preview the Pages deployment and test OAuth before changing production traffic.
 
-## Legacy history claim
-
-The original SQLite history is stored in `private.legacy_claims` and is not attached to any account until claimed. After the original operator signs in with Google, open `/account/claim/` and enter the one-time token delivered during migration. The RPC attaches all sessions, items, attempts, and mastery rows in one transaction, clears the stored token hash, and rejects reuse or partial claims.
-
-`data.sqlite` is the rollback snapshot. It and its WAL/SHM files are ignored by Git and must not be committed. Keep the existing Fly machine and volume untouched until the Pages deployment and nightly sync have both been observed successfully.
-
 ## Authorized College Board synchronization
 
 Manual local runs require server-side credentials and the explicit authorization assertion:
@@ -84,12 +78,4 @@ pnpm test
 pnpm build
 ```
 
-A successful build lists every route as static and emits the complete Pages deployment in `out/`. The supplied migration utility reads `data.sqlite` in query-only mode and first runs SQLite integrity and foreign-key checks:
-
-```bash
-node --no-warnings scripts/export-legacy-sql.mjs sync-runs
-node --no-warnings scripts/export-legacy-sql.mjs questions 0 50
-node --no-warnings scripts/export-legacy-sql.mjs claim <sha256-token-hash>
-```
-
-The SQL is intended for a controlled one-time migration and contains private question/history data. Do not commit or retain generated output.
+A successful build lists every route as static and emits the complete Pages deployment in `out/`.

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getDashboard, getPracticeSession, submitPracticeAnswer } from "@/lib/supabase-api";
+import { getDashboard, getPracticePool, getPracticeSession, startPractice, submitPracticeAnswer } from "@/lib/supabase-api";
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
@@ -22,6 +22,28 @@ describe("Supabase API client", () => {
   it("surfaces RPC errors", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message: "Authentication required." } });
     await expect(getDashboard()).rejects.toThrow("Authentication required.");
+  });
+
+  it("loads the subject-specific practice pool", async () => {
+    mocks.rpc.mockResolvedValue({ data: { total: 30, math: 12, readingWriting: 18 }, error: null });
+
+    await expect(getPracticePool()).resolves.toEqual({ total: 30, math: 12, readingWriting: 18 });
+    expect(mocks.rpc).toHaveBeenCalledWith("get_practice_pool");
+  });
+
+  it.each([
+    ["mixed", []],
+    ["math", ["section:math"]],
+    ["english", ["section:reading-writing"]],
+  ] as const)("starts %s random practice with the expected section filter", async (subject, filters) => {
+    mocks.rpc.mockResolvedValue({ data: "session-id", error: null });
+
+    await expect(startPractice(10, subject)).resolves.toBe("session-id");
+    expect(mocks.rpc).toHaveBeenCalledWith("start_practice", {
+      p_mode: "random",
+      p_count: 10,
+      p_filters: filters,
+    });
   });
 
   it("replaces private asset references with signed URLs", async () => {

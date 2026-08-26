@@ -10,15 +10,10 @@ export type DashboardData = {
   review: number;
   sections: { section: "math" | "reading-writing"; label: string; total: number; mastered: number }[];
   topics: { section: string; domain: string; skill: string; total: number; mastered: number; review: number }[];
-  activeSession: { id: string; mode: "random" | "topics"; requestedCount: number } | null;
+  activeSession: { id: string; mode: "random"; requestedCount: number } | null;
 };
-export type TopicDomain = {
-  code: string;
-  name: string;
-  section: "math" | "reading-writing";
-  count: number;
-  skills: { code: string; name: string; count: number }[];
-};
+export type PracticeSubject = "mixed" | "math" | "english";
+export type PracticePool = { total: number; math: number; readingWriting: number };
 export type PracticeQuestion = {
   id: string;
   displayId: string;
@@ -36,7 +31,7 @@ export type PracticeQuestion = {
 export type PracticeData = {
   session: {
     id: string;
-    mode: "random" | "topics";
+    mode: "random";
     requestedCount: number;
     status: "active" | "completed" | "abandoned";
     createdAt: string;
@@ -84,15 +79,18 @@ export async function getDashboard() {
   return data as DashboardData;
 }
 
-export async function getTopicCatalog() {
-  const { data, error } = await getSupabase().rpc("get_topic_catalog");
+export async function getPracticePool() {
+  const { data, error } = await getSupabase().rpc("get_practice_pool");
   rpcError(error);
-  return (data ?? []) as TopicDomain[];
+  return data as PracticePool;
 }
 
-export async function startPractice(mode: "random" | "topics", count: number, filters: string[]) {
+export async function startPractice(count: number, subject: PracticeSubject = "mixed") {
+  const filters = subject === "math"
+    ? ["section:math"]
+    : subject === "english" ? ["section:reading-writing"] : [];
   const { data, error } = await getSupabase().rpc("start_practice", {
-    p_mode: mode,
+    p_mode: "random",
     p_count: count,
     p_filters: filters,
   });
@@ -130,10 +128,4 @@ export async function submitPracticeAnswer(sessionId: string, questionId: string
 export async function abandonPracticeSession(sessionId: string) {
   const { error } = await getSupabase().rpc("abandon_practice_session", { p_session_id: sessionId });
   rpcError(error);
-}
-
-export async function claimLegacyHistory(token: string) {
-  const { data, error } = await getSupabase().rpc("claim_legacy_history", { p_token: token });
-  rpcError(error);
-  return data as { sessions: number; attempts: number; progress: number };
 }

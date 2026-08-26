@@ -1,4 +1,3 @@
-create index idx_legacy_claims_claimed_by on private.legacy_claims (claimed_by);
 create index idx_answer_attempts_question_id on public.answer_attempts (question_id);
 create index idx_answer_attempts_user_id on public.answer_attempts (user_id);
 create index idx_practice_session_items_question_id on public.practice_session_items (question_id);

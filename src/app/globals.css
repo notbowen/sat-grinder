@@ -63,10 +63,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .topic-row { display: grid; gap: 1rem; padding: 1.25rem; }
 .empty-banner { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; border: 1px solid var(--gold); border-radius: 1rem; background: var(--gold-soft); padding: 1rem 1.15rem; color: var(--gold-dark); }
 .setup-grid, .quiz-layout { display: grid; gap: 1.5rem; }
-.topic-selector { border: 1px solid var(--line); border-radius: 1rem; background: var(--paper); padding: 1rem; }
-.skill-check { display: flex; cursor: pointer; align-items: flex-start; gap: .6rem; border-radius: .7rem; background: white; padding: .7rem; color: var(--ink); font-size: .8rem; font-weight: 650; }
-.skill-check small { display: block; margin-top: .2rem; color: var(--muted); font-size: .7rem; }
-.check-input { width: 1rem; height: 1rem; margin-top: .12rem; accent-color: var(--blue); }
+.subject-option { position: relative; display: grid; cursor: pointer; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: .75rem; border: 1px solid var(--line); border-radius: .9rem; background: var(--paper); padding: .9rem; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+.subject-option input { position: absolute; opacity: 0; pointer-events: none; }
+.subject-option:has(input:checked) { border-color: var(--blue); background: #eef7f9; box-shadow: inset 0 0 0 1px var(--blue); }
+.subject-option:has(input:focus-visible) { outline: 3px solid color-mix(in srgb, var(--blue) 35%, transparent); outline-offset: 3px; }
+.subject-option-icon { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border-radius: .7rem; background: white; color: var(--blue); }
+.subject-option strong, .subject-option small { display: block; }
+.subject-option small { margin-top: .15rem; color: var(--muted); font-size: .72rem; font-weight: 650; }
+.subject-option-count { color: var(--muted); font-size: .75rem; font-weight: 800; }
 .progress-track { height: .45rem; overflow: hidden; border-radius: 999px; background: var(--paper-deep); }
 .progress-track > div { height: 100%; border-radius: inherit; background: var(--blue); transition: width .25s ease; }
 .question-chip { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; background: white; padding: .3rem .55rem; color: var(--muted); font-size: .68rem; font-weight: 750; text-transform: capitalize; }

@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, BookOpen, History, LogOut, Settings } from "lucide-react";
+import { BarChart3, BookOpen, LogOut } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/practice/random", label: "Random", icon: BookOpen },
-  { href: "/practice/topics", label: "Topics", icon: Settings },
 ];
 
 export function AppShell({ user, children }: { user: { name: string; email: string }; children: React.ReactNode }) {
@@ -20,13 +19,11 @@ export function AppShell({ user, children }: { user: { name: string; email: stri
       <Link href="/dashboard" className="brand-lockup text-[var(--ink)]"><span className="brand-mark">SG</span><span>SAT Grinder</span></Link>
       <nav className="hidden items-center gap-1 md:flex" aria-label="Primary navigation">
         {links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={`nav-link ${pathname.startsWith(href) ? "nav-link-active" : ""}`}><Icon className="size-4" />{label}</Link>)}
-        <Link href="/account/claim" className={`nav-link ${pathname.startsWith("/account/claim") ? "nav-link-active" : ""}`}><History className="size-4" />Import history</Link>
       </nav>
       <div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-sm font-bold">{user.name}</p><p className="text-xs text-[var(--muted)]">{user.email}</p></div><span className="grid size-10 place-items-center rounded-full bg-[var(--coral-soft)] font-bold text-[var(--coral-dark)]">{user.name.slice(0, 1).toUpperCase()}</span><button className="icon-button" onClick={leave} aria-label="Sign out"><LogOut className="size-4" /></button></div>
     </div></header>
     <nav className="mobile-nav" aria-label="Mobile navigation">
       {links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={pathname.startsWith(href) ? "active" : ""}><Icon className="size-5" /><span>{label}</span></Link>)}
-      <Link href="/account/claim" className={pathname.startsWith("/account/claim") ? "active" : ""}><History className="size-5" /><span>Import</span></Link>
     </nav>
     {children}
   </div>;

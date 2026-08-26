@@ -160,7 +160,6 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           id: string
-          legacy_claimed_at: string | null
           name: string
           updated_at: string
         }
@@ -168,7 +167,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           id: string
-          legacy_claimed_at?: string | null
           name: string
           updated_at?: string
         }
@@ -176,7 +174,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           id?: string
-          legacy_claimed_at?: string | null
           name?: string
           updated_at?: string
         }
@@ -451,15 +448,14 @@ export type Database = {
         Args: { p_trigger_source?: string }
         Returns: string
       }
-      claim_legacy_history: { Args: { p_token: string }; Returns: Json }
       fail_question_sync: {
         Args: { p_error: string; p_run_id: string }
         Returns: undefined
       }
       finalize_question_sync: { Args: { p_run_id: string }; Returns: Json }
       get_dashboard: { Args: never; Returns: Json }
+      get_practice_pool: { Args: never; Returns: Json }
       get_practice_session: { Args: { p_session_id: string }; Returns: Json }
-      get_topic_catalog: { Args: never; Returns: Json }
       start_practice: {
         Args: { p_count: number; p_filters?: string[]; p_mode: string }
         Returns: string

@@ -7,7 +7,6 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null check (char_length(name) between 1 and 120),
   avatar_url text,
-  legacy_claimed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -15,7 +14,7 @@ create table public.profiles (
 create table public.sync_runs (
   id uuid primary key,
   status text not null check (status in ('running', 'completed', 'failed')),
-  trigger_source text not null check (trigger_source in ('legacy-admin', 'github-action', 'manual-cli')),
+  trigger_source text not null check (trigger_source in ('github-action', 'manual-cli')),
   started_at timestamptz not null,
   completed_at timestamptz,
   total_metadata integer not null default 0 check (total_metadata >= 0),
@@ -60,7 +59,7 @@ create table public.question_assets (
 create table public.practice_sessions (
   id uuid primary key,
   user_id uuid not null references public.profiles(id) on delete cascade,
-  mode text not null check (mode in ('random', 'topics')),
+  mode text not null check (mode = 'random'),
   requested_count integer not null check (requested_count between 1 and 50),
   status text not null default 'active' check (status in ('active', 'completed', 'abandoned')),
   topic_filters text[] not null default '{}'::text[],
@@ -125,18 +124,6 @@ create table public.question_sync_staging (
   unique (run_id, display_id)
 );
 
-create table private.legacy_claims (
-  id uuid primary key default extensions.gen_random_uuid(),
-  token_hash bytea unique,
-  source_user_id text not null,
-  payload jsonb not null check (jsonb_typeof(payload) = 'object'),
-  claimed_by uuid references auth.users(id) on delete set null,
-  claimed_at timestamptz,
-  created_at timestamptz not null default now(),
-  check ((claimed_at is null and token_hash is not null and claimed_by is null)
-    or (claimed_at is not null and token_hash is null and claimed_by is not null))
-);
-
 create index idx_questions_eligible_section on public.questions (is_retired, is_active_test, section);
 create index idx_questions_domain_skill on public.questions (domain_code, skill_code);
 create index idx_practice_sessions_user_status on public.practice_sessions (user_id, status);
@@ -155,10 +142,6 @@ alter table public.practice_session_items enable row level security;
 alter table public.answer_attempts enable row level security;
 alter table public.user_question_progress enable row level security;
 alter table public.question_sync_staging enable row level security;
-alter table private.legacy_claims enable row level security;
-
-create policy deny_direct_legacy_claims on private.legacy_claims
-  for all to public using (false) with check (false);
 
 create policy profiles_select_self on public.profiles for select to authenticated using (id = (select auth.uid()));
 create policy profiles_update_self on public.profiles for update to authenticated

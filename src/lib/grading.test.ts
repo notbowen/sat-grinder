@@ -14,6 +14,11 @@ describe("gradeAnswer", () => {
     expect(gradeAnswer({ type: "spr", correctAnswers: ["3"] }, "3.0").correct).toBe(true);
   });
 
+  it("accepts a leading zero when the answer key omits it", () => {
+    expect(gradeAnswer({ type: "spr", correctAnswers: [".33"] }, "0.33").correct).toBe(true);
+    expect(gradeAnswer({ type: "spr", correctAnswers: ["-.33"] }, "-0.33").correct).toBe(true);
+  });
+
   it("accepts responses up to 50 characters", () => {
     expect(validateNumericResponse("1/0").valid).toBe(false);
     expect(validateNumericResponse("1.2.3").valid).toBe(false);

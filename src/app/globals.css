@@ -70,6 +70,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .progress-track { height: .45rem; overflow: hidden; border-radius: 999px; background: var(--paper-deep); }
 .progress-track > div { height: 100%; border-radius: inherit; background: var(--blue); transition: width .25s ease; }
 .question-chip { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; background: white; padding: .3rem .55rem; color: var(--muted); font-size: .68rem; font-weight: 750; text-transform: capitalize; }
+.question-id-chip { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; text-transform: none; }
 .question-chip.chip-hard { border-color: var(--coral); background: var(--coral-soft); color: var(--coral-dark); }
 .question-card { margin-top: 1.25rem; border: 1px solid var(--line); border-radius: 1rem; background: white; padding: clamp(1.3rem, 4vw, 2.35rem); box-shadow: 0 8px 30px rgb(23 33 38 / .05); }
 .question-html { overflow-wrap: anywhere; font-size: 1rem; line-height: 1.75; }

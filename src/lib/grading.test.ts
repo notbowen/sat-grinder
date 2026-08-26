@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { gradeAnswer, validateNumericResponse } from "@/lib/grading";
+import { mathResponseToLatex } from "@/lib/math-response";
 
 describe("gradeAnswer", () => {
   it("grades multiple-choice answers case-insensitively", () => {
@@ -24,5 +25,9 @@ describe("gradeAnswer", () => {
     expect(validateNumericResponse(String.raw`\frac{3}{4}`).valid).toBe(true);
     expect(gradeAnswer({ type: "spr", correctAnswers: ["0.75"] }, String.raw`\frac{3}{4}`).correct).toBe(true);
     expect(gradeAnswer({ type: "spr", correctAnswers: ["-2/3"] }, String.raw`-\frac{4}{6}`).correct).toBe(true);
+  });
+
+  it("renders a negative sign before the fraction", () => {
+    expect(mathResponseToLatex("-1/2")).toBe(String.raw`-\frac{1}{2}`);
   });
 });

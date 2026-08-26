@@ -71,6 +71,7 @@ export function sanitizeQuestionHtml(html: string) {
       "*": ["class", "id", "aria-hidden", "aria-label", "role"],
       p: ["style"],
       math: ["xmlns", "alttext", "display"],
+      mfenced: ["open", "close", "separators"],
       img: ["src", "alt", "width", "height"],
       td: ["colspan", "rowspan"],
       th: ["colspan", "rowspan"],

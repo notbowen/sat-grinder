@@ -45,4 +45,10 @@ describe("sanitizeQuestionHtml", () => {
 
     expect(clean).toContain("<ul><li>First note</li><li>Second note</li></ul>");
   });
+
+  it("preserves MathML absolute-value fences", () => {
+    const clean = sanitizeQuestionHtml('<math><mfenced open="|" close="|"><mi>x</mi></mfenced></math>');
+
+    expect(clean).toContain('<mfenced open="|" close="|">');
+  });
 });

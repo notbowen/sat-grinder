@@ -17,5 +17,8 @@ export function normalizeMathResponse(response: string) {
 export function mathResponseToLatex(response: string) {
   const value = response.trim();
   const fraction = value.match(/^(-?\d+)\/(\d+)$/);
-  return fraction ? `\\frac{${fraction[1]}}{${fraction[2]}}` : value;
+  if (!fraction) return value;
+  const negative = fraction[1].startsWith("-");
+  const numerator = negative ? fraction[1].slice(1) : fraction[1];
+  return `${negative ? "-" : ""}\\frac{${numerator}}{${fraction[2]}}`;
 }

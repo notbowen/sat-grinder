@@ -77,4 +77,10 @@ describe("sanitizeQuestionHtml", () => {
 
     expect(clean).toContain('<mfenced open="|" close="|">');
   });
+
+  it("preserves MathML angle notation", () => {
+    const clean = sanitizeQuestionHtml('<math alttext="angle upper Q"><mo>∠</mo><mi>Q</mi></math>');
+
+    expect(clean).toContain('<mo>∠</mo><mi>Q</mi>');
+  });
 });

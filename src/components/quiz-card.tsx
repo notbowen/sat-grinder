@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CheckCircle2, LoaderCircle, RotateCcw, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, Highlighter, LoaderCircle, RotateCcw, X } from "lucide-react";
 import type { AnswerOption } from "@/db/schema";
+import { HighlightableQuestionHtml } from "@/components/highlightable-question-html";
 import { MathExpression } from "@/components/math-expression";
 import { QuestionHtml } from "@/components/question-html";
 import { MAX_MATH_RESPONSE_LENGTH } from "@/lib/math-response";
@@ -35,8 +36,9 @@ export function QuizCard({ sessionId, question, resolved, total }: { sessionId: 
       <div className="mb-5 flex items-center justify-between gap-4"><div><p className="eyebrow">Question {resolved + 1} of {total}</p><div className="mt-2 flex flex-wrap gap-2"><span className="question-chip question-id-chip">ID {question.displayId}</span><span className="question-chip">{question.section === "math" ? "Math" : "Reading & Writing"}</span><span className="question-chip">{question.domainName}</span><span className="question-chip">{question.skillName}</span><span className={`question-chip ${question.difficulty === "hard" ? "chip-hard" : ""}`}>{question.difficulty}</span></div></div><button className="icon-button" onClick={abandon} disabled={abandoning} aria-label="Abandon quiz">{abandoning ? <LoaderCircle className="size-4 animate-spin" /> : <X className="size-4" />}</button></div>
       <div className="progress-track"><div style={{ width: `${Math.round(resolved / total * 100)}%` }} /></div>
       <article className="question-card">
-        <QuestionHtml html={question.stimulusHtml} />
-        <QuestionHtml html={question.stemHtml} className={question.stimulusHtml ? "mt-5" : ""} />
+        <div className="question-annotation-hint"><Highlighter className="size-4" aria-hidden="true" /><span>Select text to highlight</span></div>
+        <HighlightableQuestionHtml html={question.stimulusHtml} storageKey={`${sessionId}:${question.id}:stimulus`} />
+        <HighlightableQuestionHtml html={question.stemHtml} storageKey={`${sessionId}:${question.id}:stem`} className={question.stimulusHtml ? "mt-5" : ""} />
         <div className="mt-8">
           {question.type === "mcq" ? <fieldset className="space-y-3" disabled={feedback?.correct}><legend className="sr-only">Answer choices</legend>{question.answerOptions.map((option) => <label key={option.letter} className={`answer-option ${response === option.letter ? "answer-option-selected" : ""}`}><input type="radio" name="answer" value={option.letter} checked={response === option.letter} onChange={() => { setResponse(option.letter); if (feedback && !feedback.correct) setFeedback(null); }} /><span className="answer-letter">{option.letter}</span><QuestionHtml html={option.content} /></label>)}</fieldset>
           : <div className="max-w-2xl"><label className="form-label" htmlFor={`answer-${question.id}`}>Your answer</label><div className="math-answer-row mt-2"><input id={`answer-${question.id}`} className="form-input math-answer-input" value={response} maxLength={MAX_MATH_RESPONSE_LENGTH} disabled={feedback?.correct} onChange={(event) => { setResponse(event.target.value); if (feedback && !feedback.correct) setFeedback(null); }} placeholder="e.g. 5/3 or 0.75" inputMode="text" autoCapitalize="none" autoComplete="off" spellCheck={false} /><span className={`math-answer-preview ${response.trim() ? "" : "math-answer-preview-empty"}`} aria-label="Rendered answer">{response.trim() ? <MathExpression value={response} /> : "Rendered answer"}</span></div><p className="mt-2 text-sm text-[var(--muted)]">The rendered version updates as you type. Use up to {MAX_MATH_RESPONSE_LENGTH} characters.</p></div>}

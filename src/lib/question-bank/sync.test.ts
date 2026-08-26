@@ -56,6 +56,14 @@ describe("sanitizeQuestionHtml", () => {
     expect(clean).toContain('<u>Element claim</u>');
   });
 
+  it("preserves semantic and safely styled bold text", () => {
+    const clean = sanitizeQuestionHtml('<p>Plain <strong>strong</strong> <b>bold</b> <span style="font-weight: 700">styled</span></p>');
+
+    expect(clean).toContain("<strong>strong</strong>");
+    expect(clean).toContain("<b>bold</b>");
+    expect(clean).toContain('style="font-weight:700"');
+  });
+
   it("removes unsafe styles from underlined referenced content", () => {
     const clean = sanitizeQuestionHtml('<span style="text-decoration: underline; background-image: url(javascript:alert(1))">Claim</span>');
 

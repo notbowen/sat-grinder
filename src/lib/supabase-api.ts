@@ -4,6 +4,47 @@ import { getSupabase } from "@/lib/supabase";
 
 export type AnswerOption = { letter: string; content: string };
 export type DashboardWindow = "7d" | "30d" | "90d" | "all";
+export type LeaderboardWindow = DashboardWindow;
+export type FriendProfile = {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  friendsSince: string;
+};
+export type FriendRequest = {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  createdAt: string;
+};
+export type FriendshipsData = {
+  friends: FriendProfile[];
+  incoming: FriendRequest[];
+  outgoing: FriendRequest[];
+};
+export type FriendsLeaderboardMember = {
+  rank: number;
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  isCurrentUser: boolean;
+  completed: number;
+  cleanSolved: number;
+  cleanSolveRate: number | null;
+  activeTimeMs: number;
+  practiceDays: number;
+  newlyMastered: number;
+};
+export type FriendsLeaderboardData = {
+  window: LeaderboardWindow;
+  timezone: string;
+  generatedAt: string;
+  members: FriendsLeaderboardMember[];
+};
 export type DashboardBreakdown = {
   key: string;
   label: string;
@@ -165,6 +206,40 @@ export async function getDashboard(window: DashboardWindow = "30d") {
   const { data, error } = await getSupabase().rpc("get_dashboard", { p_window: window, p_timezone: timezone });
   rpcError(error);
   return data as DashboardData;
+}
+
+function browserTimezone() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; }
+  catch { return "UTC"; }
+}
+
+export async function getFriendships() {
+  const { data, error } = await getSupabase().rpc("get_friendships");
+  rpcError(error);
+  return data as FriendshipsData;
+}
+
+export async function sendFriendRequest(email: string) {
+  const { data, error } = await getSupabase().rpc("send_friend_request", { p_email: email });
+  rpcError(error);
+  return data as string;
+}
+
+export async function respondToFriendRequest(requestId: string, accept: boolean) {
+  const { error } = await getSupabase().rpc("respond_to_friend_request", {
+    p_request_id: requestId,
+    p_accept: accept,
+  });
+  rpcError(error);
+}
+
+export async function getFriendsLeaderboard(window: LeaderboardWindow = "30d") {
+  const { data, error } = await getSupabase().rpc("get_friends_leaderboard", {
+    p_window: window,
+    p_timezone: browserTimezone(),
+  });
+  rpcError(error);
+  return data as FriendsLeaderboardData;
 }
 
 export async function getPracticePool() {

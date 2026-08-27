@@ -72,6 +72,51 @@ export type Database = {
           },
         ]
       }
+      friendships: {
+        Row: {
+          accepted_at: string | null
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friendships_addressee_id_fkey"
+            columns: ["addressee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friendships_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       practice_session_items: {
         Row: {
           first_attempt_correct: boolean | null
@@ -460,12 +505,22 @@ export type Database = {
         Args: { p_timezone?: string; p_window?: string }
         Returns: Json
       }
+      get_friendships: { Args: never; Returns: Json }
+      get_friends_leaderboard: {
+        Args: { p_timezone?: string; p_window?: string }
+        Returns: Json
+      }
       get_practice_pool: { Args: never; Returns: Json }
       get_practice_session: { Args: { p_session_id: string }; Returns: Json }
       start_practice: {
         Args: { p_count: number; p_filters?: string[]; p_mode: string }
         Returns: string
       }
+      respond_to_friend_request: {
+        Args: { p_accept: boolean; p_request_id: string }
+        Returns: undefined
+      }
+      send_friend_request: { Args: { p_email: string }; Returns: string }
       submit_practice_answer: {
         Args: {
           p_active_duration_ms?: number | null
@@ -475,6 +530,7 @@ export type Database = {
         }
         Returns: Json
       }
+      sync_oauth_profile: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never

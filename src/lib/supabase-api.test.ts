@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getDashboard, getPracticePool, getPracticeSession, startPractice, submitPracticeAnswer } from "@/lib/supabase-api";
+import {
+  getDashboard,
+  getFriendships,
+  getFriendsLeaderboard,
+  getPracticePool,
+  getPracticeSession,
+  respondToFriendRequest,
+  sendFriendRequest,
+  startPractice,
+  submitPracticeAnswer,
+} from "@/lib/supabase-api";
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
@@ -33,6 +43,27 @@ describe("Supabase API client", () => {
 
     await expect(getPracticePool()).resolves.toEqual({ total: 30, math: 12, readingWriting: 18 });
     expect(mocks.rpc).toHaveBeenCalledWith("get_practice_pool");
+  });
+
+  it("uses private friendship RPCs for requests and leaderboard data", async () => {
+    mocks.rpc
+      .mockResolvedValueOnce({ data: { friends: [], incoming: [], outgoing: [] }, error: null })
+      .mockResolvedValueOnce({ data: "request-id", error: null })
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: { window: "7d", timezone: "UTC", generatedAt: "now", members: [] }, error: null });
+
+    await expect(getFriendships()).resolves.toEqual({ friends: [], incoming: [], outgoing: [] });
+    await expect(sendFriendRequest("friend@example.com")).resolves.toBe("request-id");
+    await expect(respondToFriendRequest("request-id", true)).resolves.toBeUndefined();
+    await getFriendsLeaderboard("7d");
+
+    expect(mocks.rpc).toHaveBeenNthCalledWith(1, "get_friendships");
+    expect(mocks.rpc).toHaveBeenNthCalledWith(2, "send_friend_request", { p_email: "friend@example.com" });
+    expect(mocks.rpc).toHaveBeenNthCalledWith(3, "respond_to_friend_request", { p_request_id: "request-id", p_accept: true });
+    expect(mocks.rpc).toHaveBeenNthCalledWith(4, "get_friends_leaderboard", {
+      p_window: "7d",
+      p_timezone: expect.any(String),
+    });
   });
 
   it.each([

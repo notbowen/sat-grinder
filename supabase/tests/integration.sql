@@ -7,23 +7,69 @@ do $$
 declare
   learner_a constant uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   learner_b constant uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  learner_c constant uuid := 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
   test_question constant uuid := 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
   run_id uuid;
   session_id uuid;
+  friend_request_id uuid;
   pool jsonb;
   feedback jsonb;
   dashboard jsonb;
+  friendships jsonb;
+  leaderboard jsonb;
   failed_as_expected boolean;
 begin
   insert into auth.users (
     instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
     raw_app_meta_data, raw_user_meta_data, created_at, updated_at
   ) values
-    ('00000000-0000-0000-0000-000000000000', learner_a, 'authenticated', 'authenticated', 'rpc-test-a@example.invalid', '', now(), '{}', '{"name":"RPC Test A"}', now(), now()),
-    ('00000000-0000-0000-0000-000000000000', learner_b, 'authenticated', 'authenticated', 'rpc-test-b@example.invalid', '', now(), '{}', '{"name":"RPC Test B"}', now(), now());
+    ('00000000-0000-0000-0000-000000000000', learner_a, 'authenticated', 'authenticated', 'rpc-test-a@example.invalid', '', now(), '{}', '{"name":"RPC Test A","picture":"https://lh3.googleusercontent.com/test-a"}', now(), now()),
+    ('00000000-0000-0000-0000-000000000000', learner_b, 'authenticated', 'authenticated', 'rpc-test-b@example.invalid', '', now(), '{}', '{"name":"RPC Test B"}', now(), now()),
+    ('00000000-0000-0000-0000-000000000000', learner_c, 'authenticated', 'authenticated', 'rpc-test-c@example.invalid', '', now(), '{}', '{"name":"RPC Test C"}', now(), now());
 
-  if (select count(*) <> 2 from public.profiles where id in (learner_a, learner_b)) then
+  if (select count(*) <> 3 from public.profiles where id in (learner_a, learner_b, learner_c)) then
     raise exception 'Profile creation trigger did not create all test profiles.';
+  end if;
+  if (select avatar_url is distinct from 'https://lh3.googleusercontent.com/test-a' from public.profiles where id = learner_a) then
+    raise exception 'OAuth profile picture was not copied into the learner profile.';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', learner_a::text, true);
+  friend_request_id := public.send_friend_request('RPC-TEST-B@EXAMPLE.INVALID');
+  friendships := public.get_friendships();
+  if pg_catalog.jsonb_array_length(friendships -> 'outgoing') <> 1
+    or pg_catalog.jsonb_array_length(friendships -> 'friends') <> 0 then
+    raise exception 'A sent request was not pending before acceptance.';
+  end if;
+  leaderboard := public.get_friends_leaderboard('30d', 'Asia/Singapore');
+  if pg_catalog.jsonb_array_length(leaderboard -> 'members') <> 1
+    or leaderboard #>> '{members,0,id}' <> learner_a::text then
+    raise exception 'A pending or unrelated account leaked into the friends leaderboard.';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', learner_c::text, true);
+  failed_as_expected := false;
+  begin
+    perform public.respond_to_friend_request(friend_request_id, true);
+  exception when others then
+    if sqlerrm <> 'Pending friend request not found.' then raise; end if;
+    failed_as_expected := true;
+  end;
+  if not failed_as_expected then raise exception 'An unrelated learner accepted another user''s request.'; end if;
+
+  perform set_config('request.jwt.claim.sub', learner_b::text, true);
+  friendships := public.get_friendships();
+  if pg_catalog.jsonb_array_length(friendships -> 'incoming') <> 1 then
+    raise exception 'The friend request did not reach its intended recipient.';
+  end if;
+  perform public.respond_to_friend_request(friend_request_id, true);
+  leaderboard := public.get_friends_leaderboard('30d', 'Asia/Singapore');
+  if pg_catalog.jsonb_array_length(leaderboard -> 'members') <> 2
+    or exists (
+      select 1 from pg_catalog.jsonb_array_elements(leaderboard -> 'members') as member
+      where member ->> 'id' = learner_c::text
+    ) then
+    raise exception 'The leaderboard was not limited to accepted friends.';
   end if;
 
   insert into public.questions (
@@ -128,6 +174,11 @@ begin
     select 1 from public.user_question_progress
     where user_id = learner_a and question_id = test_question and status = 'review'
   ) then raise exception 'A retry incorrectly mastered the question.'; end if;
+  leaderboard := public.get_friends_leaderboard('30d', 'Asia/Singapore');
+  if leaderboard #>> '{members,0,id}' <> learner_a::text
+    or (leaderboard #>> '{members,0,completed}')::integer < 1 then
+    raise exception 'Friends leaderboard did not rank completed progress.';
+  end if;
 
   run_id := public.begin_question_sync('manual-cli');
   insert into public.question_sync_staging (

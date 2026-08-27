@@ -2,6 +2,11 @@
 
 SAT Grinder is a static Next.js application for medium and hard Reading & Writing and Math practice. Cloudflare Pages serves the exported frontend, while Supabase provides Google authentication, Postgres persistence, transactional grading RPCs, row-level security, and private question-asset storage.
 
+## Tasks
+
+- [ ] Finish testing friendship feature
+- [ ] Migrate Supabase to `ap-southeast-1`
+
 ## Architecture
 
 - Next.js 16 static export (`out/`) with no application server or API routes.

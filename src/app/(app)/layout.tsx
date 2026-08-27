@@ -13,5 +13,6 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
   if (loading || !user) return <main className="grid min-h-screen place-items-center"><LoaderCircle className="size-7 animate-spin text-[var(--blue)]" aria-label="Loading account" /></main>;
   const metadata = user.user_metadata;
   const name = metadata.full_name || metadata.name || user.email?.split("@")[0] || "Learner";
-  return <AppShell user={{ name, email: user.email ?? "" }}>{children}</AppShell>;
+  const avatarUrl = metadata.avatar_url || metadata.picture || null;
+  return <AppShell user={{ name, email: user.email ?? "", avatarUrl }}>{children}</AppShell>;
 }

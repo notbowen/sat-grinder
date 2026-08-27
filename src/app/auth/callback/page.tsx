@@ -13,9 +13,14 @@ export default function AuthCallbackPage() {
     void Promise.resolve().then(async () => {
       const code = new URLSearchParams(window.location.search).get("code");
       if (!code) { setError("Google did not return a valid authorization code."); return; }
-      const { error: exchangeError } = await getSupabase().auth.exchangeCodeForSession(code);
+      const supabase = getSupabase();
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
       if (exchangeError) setError(exchangeError.message);
-      else router.replace("/dashboard/");
+      else {
+        const { error: profileError } = await supabase.rpc("sync_oauth_profile");
+        if (profileError) setError(profileError.message);
+        else router.replace("/dashboard/");
+      }
     });
   }, [router]);
 

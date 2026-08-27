@@ -8,6 +8,7 @@ import {
   MailPlus,
   Send,
   Trophy,
+  UserMinus,
   UserRoundCheck,
   UsersRound,
   X,
@@ -16,18 +17,20 @@ import { UserAvatar } from "@/components/user-avatar";
 import {
   getFriendships,
   getFriendsLeaderboard,
+  removeFriend,
   respondToFriendRequest,
   sendFriendRequest,
   type FriendRequest,
+  type FriendProfile,
   type FriendshipsData,
   type FriendsLeaderboardData,
   type LeaderboardWindow,
 } from "@/lib/supabase-api";
 
 const windows: { value: LeaderboardWindow; label: string; shortLabel: string }[] = [
-  { value: "7d", label: "the last 7 days", shortLabel: "7 days" },
-  { value: "30d", label: "the last 30 days", shortLabel: "30 days" },
-  { value: "90d", label: "the last 90 days", shortLabel: "90 days" },
+  { value: "1d", label: "the last day", shortLabel: "1 day" },
+  { value: "14d", label: "the last 2 weeks", shortLabel: "2 weeks" },
+  { value: "30d", label: "the last month", shortLabel: "1 month" },
   { value: "all", label: "all time", shortLabel: "All time" },
 ];
 
@@ -60,6 +63,7 @@ export default function FriendsPage() {
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
+  const [removingFriend, setRemovingFriend] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -121,6 +125,18 @@ export default function FriendsPage() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Friend request could not be updated.");
     } finally { setRespondingTo(null); }
+  }
+
+  async function removeAcceptedFriend(friend: FriendProfile) {
+    if (!globalThis.confirm(`Remove ${friend.name} from your friends? You can send a new request later.`)) return;
+    setRemovingFriend(friend.id); setError(""); setNotice("");
+    try {
+      await removeFriend(friend.id);
+      await refreshSocial(true);
+      setNotice(`Removed ${friend.name} from your friends.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Friend could not be removed.");
+    } finally { setRemovingFriend(null); }
   }
 
   const selectedWindow = windows.find((option) => option.value === window) ?? windows[1];
@@ -206,7 +222,12 @@ export default function FriendsPage() {
       <div className="section-heading"><div><p className="eyebrow">Your circle</p><h2 className="section-title">Accepted friends</h2></div><span className="request-count accepted">{social?.friends.length ?? 0}</span></div>
       {social?.friends.length ? <div className="accepted-friends-grid">{social.friends.map((friend) => <article key={friend.id}>
         <div className="friend-identity"><UserAvatar name={friend.name} avatarUrl={friend.avatarUrl} className="size-12" /><div><strong>{friend.name}</strong><span>{friend.email}</span></div></div>
-        <span className="accepted-chip"><UserRoundCheck className="size-3.5" /> Friends</span>
+        <div className="accepted-friend-actions">
+          <span className="accepted-chip"><UserRoundCheck className="size-3.5" /> Friends</span>
+          <button type="button" className="remove-friend-button" aria-label={`Remove ${friend.name}`} disabled={removingFriend === friend.id} onClick={() => void removeAcceptedFriend(friend)}>
+            {removingFriend === friend.id ? <LoaderCircle className="size-3.5 animate-spin" /> : <UserMinus className="size-3.5" />} Remove
+          </button>
+        </div>
       </article>)}</div> : <div className="analytics-empty"><UsersRound className="size-6" /><p>Accepted friends will appear here and on your private leaderboard.</p></div>}
     </section>
   </main>;

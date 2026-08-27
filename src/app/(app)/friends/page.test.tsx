@@ -8,6 +8,7 @@ import type { FriendshipsData, FriendsLeaderboardData } from "@/lib/supabase-api
 const mocks = vi.hoisted(() => ({
   getFriendships: vi.fn(),
   getFriendsLeaderboard: vi.fn(),
+  removeFriend: vi.fn(),
   sendFriendRequest: vi.fn(),
   respondToFriendRequest: vi.fn(),
 }));
@@ -38,21 +39,25 @@ beforeEach(() => {
   mocks.getFriendsLeaderboard.mockResolvedValue(leaderboard);
   mocks.sendFriendRequest.mockResolvedValue("new-request");
   mocks.respondToFriendRequest.mockResolvedValue(undefined);
+  mocks.removeFriend.mockResolvedValue(undefined);
 });
 
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.clearAllMocks(); });
 
 describe("FriendsPage", () => {
   it("shows only the accepted-friends leaderboard and changes its horizon", async () => {
     render(<FriendsPage />);
 
-    expect(await screen.findByRole("heading", { name: "Your circle, the last 30 days" })).not.toBeNull();
+    expect(await screen.findByRole("heading", { name: "Your circle, the last month" })).not.toBeNull();
     expect(screen.getByText("There is no global leaderboard.", { exact: false })).not.toBeNull();
     expect(screen.getByText("Current Learner")).not.toBeNull();
     expect(screen.getAllByText("Ada Friend").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "1 day" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "1 month" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "All time" })).not.toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "7 days" }));
-    await waitFor(() => expect(mocks.getFriendsLeaderboard).toHaveBeenLastCalledWith("7d"));
+    fireEvent.click(screen.getByRole("button", { name: "2 weeks" }));
+    await waitFor(() => expect(mocks.getFriendsLeaderboard).toHaveBeenLastCalledWith("14d"));
   });
 
   it("sends and accepts email friend requests", async () => {
@@ -66,5 +71,18 @@ describe("FriendsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Accept" }));
     await waitFor(() => expect(mocks.respondToFriendRequest).toHaveBeenCalledWith("request", true));
     expect(mocks.getFriendsLeaderboard.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it("confirms and removes an accepted friend", async () => {
+    vi.spyOn(globalThis, "confirm").mockReturnValue(true);
+    render(<FriendsPage />);
+    await screen.findByRole("heading", { name: "Accepted friends" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove Ada Friend" }));
+
+    expect(globalThis.confirm).toHaveBeenCalledWith("Remove Ada Friend from your friends? You can send a new request later.");
+    await waitFor(() => expect(mocks.removeFriend).toHaveBeenCalledWith("friend"));
+    expect(mocks.getFriendsLeaderboard.mock.calls.length).toBeGreaterThan(1);
+    expect(await screen.findByText("Removed Ada Friend from your friends.")).not.toBeNull();
   });
 });

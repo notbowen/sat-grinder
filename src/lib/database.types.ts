@@ -512,6 +512,10 @@ export type Database = {
       }
       get_practice_pool: { Args: never; Returns: Json }
       get_practice_session: { Args: { p_session_id: string }; Returns: Json }
+      remove_friend: {
+        Args: { p_friend_id: string }
+        Returns: undefined
+      }
       start_practice: {
         Args: { p_count: number; p_filters?: string[]; p_mode: string }
         Returns: string

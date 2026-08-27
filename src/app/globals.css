@@ -308,6 +308,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .accepted-friends-grid { display: grid; gap: .65rem; }
 .accepted-friends-grid article { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: .75rem; border: 1px solid var(--line); border-radius: .85rem; background: var(--paper); padding: .8rem; }
 .accepted-chip { flex: 0 0 auto; background: var(--green-soft); color: var(--green); }
+.accepted-friend-actions { display: flex; flex: 0 0 auto; align-items: center; gap: .45rem; }
+.remove-friend-button { display: inline-flex; min-height: 1.9rem; align-items: center; gap: .3rem; border: 1px solid var(--line); border-radius: .55rem; background: white; padding: .35rem .5rem; color: var(--coral-dark); font-size: .62rem; font-weight: 850; }
+.remove-friend-button:hover { border-color: var(--coral); background: var(--coral-soft); }
+.remove-friend-button:disabled { cursor: wait; opacity: .6; }
 @media (min-width: 1024px) { .setup-grid { grid-template-columns: minmax(0,1fr) 330px; } .quiz-layout { grid-template-columns: minmax(0,1fr) 360px; align-items: start; } .feedback-panel { position: sticky; top: 6.5rem; } }
 @media (min-width: 640px) { .topic-row { grid-template-columns: minmax(0,1fr) 200px 70px; align-items: center; } }
 @media (min-width: 768px) { .mobile-nav { display: none; } }

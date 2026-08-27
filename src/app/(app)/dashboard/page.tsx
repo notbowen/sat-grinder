@@ -26,9 +26,9 @@ import {
 } from "@/lib/supabase-api";
 
 const windows: { value: DashboardWindow; label: string }[] = [
-  { value: "7d", label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "90d", label: "90 days" },
+  { value: "1d", label: "1 day" },
+  { value: "14d", label: "2 weeks" },
+  { value: "30d", label: "1 month" },
   { value: "all", label: "All time" },
 ];
 

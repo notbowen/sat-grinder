@@ -41,7 +41,7 @@ begin
     or pg_catalog.jsonb_array_length(friendships -> 'friends') <> 0 then
     raise exception 'A sent request was not pending before acceptance.';
   end if;
-  leaderboard := public.get_friends_leaderboard('30d', 'Asia/Singapore');
+  leaderboard := public.get_friends_leaderboard('14d', 'Asia/Singapore');
   if pg_catalog.jsonb_array_length(leaderboard -> 'members') <> 1
     or leaderboard #>> '{members,0,id}' <> learner_a::text then
     raise exception 'A pending or unrelated account leaked into the friends leaderboard.';
@@ -63,7 +63,7 @@ begin
     raise exception 'The friend request did not reach its intended recipient.';
   end if;
   perform public.respond_to_friend_request(friend_request_id, true);
-  leaderboard := public.get_friends_leaderboard('30d', 'Asia/Singapore');
+  leaderboard := public.get_friends_leaderboard('14d', 'Asia/Singapore');
   if pg_catalog.jsonb_array_length(leaderboard -> 'members') <> 2
     or exists (
       select 1 from pg_catalog.jsonb_array_elements(leaderboard -> 'members') as member
@@ -84,7 +84,7 @@ begin
   );
 
   perform set_config('request.jwt.claim.sub', learner_a::text, true);
-  dashboard := public.get_dashboard('30d', 'Asia/Singapore');
+  dashboard := public.get_dashboard('14d', 'Asia/Singapore');
   if (dashboard #>> '{snapshot,total}')::integer < 1
     or (dashboard #>> '{snapshot,total}')::integer <>
       (dashboard #>> '{snapshot,mastered}')::integer
@@ -164,7 +164,7 @@ begin
   if (select sum(active_duration_ms) <> 60000 from public.answer_attempts a where a.session_id = integration.session_id) then
     raise exception 'Active attempt timing was not stored correctly.';
   end if;
-  dashboard := public.get_dashboard('30d', 'Asia/Singapore');
+  dashboard := public.get_dashboard('14d', 'Asia/Singapore');
   if (dashboard #>> '{summary,activeTimeMs}')::integer < 60000
     or (dashboard #>> '{summary,completed}')::integer < 1
     or (dashboard #>> '{reviewAnalytics,total}')::integer < 1 then
@@ -174,7 +174,7 @@ begin
     select 1 from public.user_question_progress
     where user_id = learner_a and question_id = test_question and status = 'review'
   ) then raise exception 'A retry incorrectly mastered the question.'; end if;
-  leaderboard := public.get_friends_leaderboard('30d', 'Asia/Singapore');
+  leaderboard := public.get_friends_leaderboard('14d', 'Asia/Singapore');
   if leaderboard #>> '{members,0,id}' <> learner_a::text
     or (leaderboard #>> '{members,0,completed}')::integer < 1 then
     raise exception 'Friends leaderboard did not rank completed progress.';
@@ -201,6 +201,25 @@ begin
     or not exists (select 1 from public.sync_runs where id = run_id and status = 'running')
     or not exists (select 1 from public.question_sync_staging where question_sync_staging.run_id = integration.run_id) then
     raise exception 'A failed synchronization partially changed the active bank.';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', learner_c::text, true);
+  failed_as_expected := false;
+  begin
+    perform public.remove_friend(learner_a);
+  exception when others then
+    if sqlerrm <> 'Friend not found.' then raise; end if;
+    failed_as_expected := true;
+  end;
+  if not failed_as_expected then raise exception 'An unrelated learner removed another account''s friend.'; end if;
+
+  perform set_config('request.jwt.claim.sub', learner_a::text, true);
+  perform public.remove_friend(learner_b);
+  friendships := public.get_friendships();
+  leaderboard := public.get_friends_leaderboard('14d', 'Asia/Singapore');
+  if pg_catalog.jsonb_array_length(friendships -> 'friends') <> 0
+    or pg_catalog.jsonb_array_length(leaderboard -> 'members') <> 1 then
+    raise exception 'Removed friend remained in the friend list or leaderboard.';
   end if;
 end;
 $$;

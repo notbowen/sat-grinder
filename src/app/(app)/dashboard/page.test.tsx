@@ -54,9 +54,12 @@ describe("DashboardPage", () => {
     expect(await screen.findByRole("heading", { name: "Performance summary" })).not.toBeNull();
     expect(screen.getByText("10 of 16 on the first try")).not.toBeNull();
     expect(screen.getAllByText("n=8").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "1 day" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "1 month" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "All time" })).not.toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "7 days" }));
-    await waitFor(() => expect(mocks.getDashboard).toHaveBeenLastCalledWith("7d"));
+    fireEvent.click(screen.getByRole("button", { name: "2 weeks" }));
+    await waitFor(() => expect(mocks.getDashboard).toHaveBeenLastCalledWith("14d"));
   });
 
   it("sorts skill diagnostics by a selected metric", async () => {

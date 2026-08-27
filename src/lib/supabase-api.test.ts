@@ -5,6 +5,7 @@ import {
   getFriendsLeaderboard,
   getPracticePool,
   getPracticeSession,
+  removeFriend,
   respondToFriendRequest,
   sendFriendRequest,
   startPractice,
@@ -50,20 +51,23 @@ describe("Supabase API client", () => {
       .mockResolvedValueOnce({ data: { friends: [], incoming: [], outgoing: [] }, error: null })
       .mockResolvedValueOnce({ data: "request-id", error: null })
       .mockResolvedValueOnce({ data: null, error: null })
-      .mockResolvedValueOnce({ data: { window: "7d", timezone: "UTC", generatedAt: "now", members: [] }, error: null });
+      .mockResolvedValueOnce({ data: { window: "14d", timezone: "UTC", generatedAt: "now", members: [] }, error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
 
     await expect(getFriendships()).resolves.toEqual({ friends: [], incoming: [], outgoing: [] });
     await expect(sendFriendRequest("friend@example.com")).resolves.toBe("request-id");
     await expect(respondToFriendRequest("request-id", true)).resolves.toBeUndefined();
-    await getFriendsLeaderboard("7d");
+    await getFriendsLeaderboard("14d");
+    await expect(removeFriend("friend-id")).resolves.toBeUndefined();
 
     expect(mocks.rpc).toHaveBeenNthCalledWith(1, "get_friendships");
     expect(mocks.rpc).toHaveBeenNthCalledWith(2, "send_friend_request", { p_email: "friend@example.com" });
     expect(mocks.rpc).toHaveBeenNthCalledWith(3, "respond_to_friend_request", { p_request_id: "request-id", p_accept: true });
     expect(mocks.rpc).toHaveBeenNthCalledWith(4, "get_friends_leaderboard", {
-      p_window: "7d",
+      p_window: "14d",
       p_timezone: expect.any(String),
     });
+    expect(mocks.rpc).toHaveBeenNthCalledWith(5, "remove_friend", { p_friend_id: "friend-id" });
   });
 
   it.each([

@@ -3,7 +3,7 @@
 import { getSupabase } from "@/lib/supabase";
 
 export type AnswerOption = { letter: string; content: string };
-export type DashboardWindow = "7d" | "30d" | "90d" | "all";
+export type DashboardWindow = "1d" | "14d" | "30d" | "all";
 export type LeaderboardWindow = DashboardWindow;
 export type FriendProfile = {
   id: string;
@@ -230,6 +230,11 @@ export async function respondToFriendRequest(requestId: string, accept: boolean)
     p_request_id: requestId,
     p_accept: accept,
   });
+  rpcError(error);
+}
+
+export async function removeFriend(friendId: string) {
+  const { error } = await getSupabase().rpc("remove_friend", { p_friend_id: friendId });
   rpcError(error);
 }
 

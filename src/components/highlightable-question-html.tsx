@@ -149,7 +149,7 @@ export function HighlightableQuestionHtml({
   const [annotations, setAnnotations] = useState<TextAnnotation[]>([]);
   const [toolbar, setToolbar] = useState<ToolbarState | null>(null);
   const [announcement, setAnnouncement] = useState("");
-  const normalizedHtml = html ? normalizeQuestionHtml(html) : html;
+  const normalizedHtml = html ? normalizeQuestionHtml(html) : "";
 
   useLayoutEffect(() => {
     const root = rootRef.current;

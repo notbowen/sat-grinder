@@ -224,6 +224,52 @@ async function insertBatches(client: SupabaseClient, table: string, rows: Record
   }
 }
 
+/**
+ * College Board republishes some items under a second `questionId` while keeping the
+ * original `external_id`, so the raw metadata carries two rows for one question. The
+ * detail endpoint is keyed on `external_id` and returns identical content for both, so
+ * the revisions are collapsed to the latest one rather than failing the run. Two
+ * distinct questions claiming one `questionId` is a different problem — `questions`
+ * holds a unique index on `display_id` — and still stops the run.
+ */
+/** Supabase rejections are plain `{ message, code, details }` objects rather than `Error`s. */
+export function describeSyncError(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const { message, code, details } = error as { message?: unknown; code?: unknown; details?: unknown };
+    if (typeof message === "string" && message) {
+      return [typeof code === "string" && code ? `[${code}]` : "", message, typeof details === "string" ? details : ""].filter(Boolean).join(" ");
+    }
+  }
+  return "Unknown synchronization error";
+}
+
+export function dedupeQuestionMetadata(items: Metadata[]) {
+  const revisions = new Map<string, Metadata[]>();
+  for (const item of items) {
+    const group = revisions.get(item.external_id);
+    if (group) group.push(item);
+    else revisions.set(item.external_id, [item]);
+  }
+
+  const metadata: Metadata[] = [];
+  const collapsed: { externalId: string; kept: string; dropped: string[] }[] = [];
+  for (const [externalId, group] of revisions) {
+    // Order by questionId as well so a run stays reproducible when updateDate ties.
+    const ordered = [...group].sort((a, b) => (b.updateDate ?? 0) - (a.updateDate ?? 0) || a.questionId.localeCompare(b.questionId));
+    metadata.push(ordered[0]);
+    if (ordered.length > 1) collapsed.push({ externalId, kept: ordered[0].questionId, dropped: ordered.slice(1).map((item) => item.questionId) });
+  }
+
+  const owners = new Map<string, string>();
+  for (const item of metadata) {
+    const owner = owners.get(item.questionId);
+    if (owner) throw new Error(`Question identifier ${item.questionId} is claimed by two questions: ${owner} and ${item.external_id}.`);
+    owners.set(item.questionId, item.external_id);
+  }
+  return { metadata, collapsed };
+}
+
 export async function runQuestionBankSync(triggerSource: "github-action" | "manual-cli" = "github-action") {
   if (process.env.COLLEGE_BOARD_EQB_AUTHORIZED !== "true") {
     throw new Error("Set COLLEGE_BOARD_EQB_AUTHORIZED=true only after confirming written content authorization.");
@@ -245,13 +291,12 @@ export async function runQuestionBankSync(triggerSource: "github-action" | "manu
         if (!item.external_id || item.difficulty === "E") return [];
         return [{ ...item, external_id: item.external_id, section, isActiveTest: active.has(item.external_id) }];
       });
-    const metadata = [...parseList(readingRaw, "reading-writing", activeReading), ...parseList(mathRaw, "math", activeMath)];
-    const ids = new Set<string>();
-    const displayIds = new Set<string>();
-    for (const item of metadata) {
-      if (ids.has(item.external_id) || displayIds.has(item.questionId)) throw new Error(`Duplicate question metadata: ${item.external_id}.`);
-      ids.add(item.external_id);
-      displayIds.add(item.questionId);
+    const { metadata, collapsed } = dedupeQuestionMetadata([
+      ...parseList(readingRaw, "reading-writing", activeReading),
+      ...parseList(mathRaw, "math", activeMath),
+    ]);
+    for (const group of collapsed) {
+      console.log(`Collapsed ${group.dropped.length + 1} College Board revisions of ${group.externalId}: kept ${group.kept}, dropped ${group.dropped.join(", ")}.`);
     }
     if (!metadata.length) throw new Error("The validated question bank is empty.");
     const { error: countError } = await client.from("sync_runs").update({ total_metadata: metadata.length }).eq("id", runId);
@@ -322,7 +367,7 @@ export async function runQuestionBankSync(triggerSource: "github-action" | "manu
     if (finalizeError) throw finalizeError;
     return result as { runId: string; imported: number; activeExcluded: number };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown synchronization error";
+    const message = describeSyncError(error);
     await client.rpc("fail_question_sync", { p_run_id: runId, p_error: message });
     throw error;
   }

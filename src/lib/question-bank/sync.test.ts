@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runQuestionBankSync, sanitizeQuestionHtml } from "@/lib/question-bank/sync";
+import { dedupeQuestionMetadata, runQuestionBankSync, sanitizeQuestionHtml } from "@/lib/question-bank/sync";
 
 describe("sanitizeQuestionHtml", () => {
   it("preserves the safe inline SVG used by graph questions", () => {
@@ -97,5 +97,60 @@ describe("sanitizeQuestionHtml", () => {
     await expect(runQuestionBankSync("manual-cli")).rejects.toThrow("confirming written content authorization");
     if (previous === undefined) delete process.env.COLLEGE_BOARD_EQB_AUTHORIZED;
     else process.env.COLLEGE_BOARD_EQB_AUTHORIZED = previous;
+  });
+});
+
+describe("dedupeQuestionMetadata", () => {
+  const item = (overrides: Partial<Parameters<typeof dedupeQuestionMetadata>[0][number]>) => ({
+    questionId: "aaaaaaaa",
+    external_id: "40946085-fbf1-4c4a-977f-931fd79ef80c",
+    skill_cd: "H.E.",
+    skill_desc: "Linear inequalities in one or two variables",
+    primary_class_cd: "H",
+    primary_class_cd_desc: "Algebra",
+    difficulty: "H" as const,
+    section: "math" as const,
+    isActiveTest: false,
+    ...overrides,
+  });
+
+  it("keeps the latest revision when College Board republishes one external id", () => {
+    const { metadata, collapsed } = dedupeQuestionMetadata([
+      item({ questionId: "d8539e09", updateDate: 1691007959820 }),
+      item({ questionId: "f8ff3249", updateDate: 1743430554989 }),
+    ]);
+
+    expect(metadata).toHaveLength(1);
+    expect(metadata[0].questionId).toBe("f8ff3249");
+    expect(collapsed).toEqual([
+      { externalId: "40946085-fbf1-4c4a-977f-931fd79ef80c", kept: "f8ff3249", dropped: ["d8539e09"] },
+    ]);
+  });
+
+  it("collapses revisions the same way regardless of the order College Board returns them", () => {
+    const revisions = [
+      item({ questionId: "b0000000", updateDate: 1743430554989 }),
+      item({ questionId: "a0000000", updateDate: 1743430554989 }),
+    ];
+
+    expect(dedupeQuestionMetadata(revisions).metadata[0].questionId).toBe("a0000000");
+    expect(dedupeQuestionMetadata([...revisions].reverse()).metadata[0].questionId).toBe("a0000000");
+  });
+
+  it("keeps distinct questions and reports nothing collapsed", () => {
+    const { metadata, collapsed } = dedupeQuestionMetadata([
+      item({ questionId: "d8539e09" }),
+      item({ questionId: "99c5e794", external_id: "b43f007e-8a7c-48b8-8a0a-eeb0f65e3faf" }),
+    ]);
+
+    expect(metadata.map((entry) => entry.questionId)).toEqual(["d8539e09", "99c5e794"]);
+    expect(collapsed).toEqual([]);
+  });
+
+  it("rejects two questions claiming one display identifier", () => {
+    expect(() => dedupeQuestionMetadata([
+      item({ questionId: "d8539e09" }),
+      item({ questionId: "d8539e09", external_id: "b43f007e-8a7c-48b8-8a0a-eeb0f65e3faf" }),
+    ])).toThrow("Question identifier d8539e09 is claimed by two questions");
   });
 });

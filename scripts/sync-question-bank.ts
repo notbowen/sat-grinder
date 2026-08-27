@@ -1,4 +1,4 @@
-import { runQuestionBankSync } from "../src/lib/question-bank/sync";
+import { describeSyncError, runQuestionBankSync } from "../src/lib/question-bank/sync";
 
 async function main() {
   console.log("Starting authorized College Board question-bank synchronization...");
@@ -7,6 +7,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
+  console.error(describeSyncError(error));
   process.exit(1);
 });

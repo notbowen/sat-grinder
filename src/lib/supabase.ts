@@ -23,6 +23,15 @@ export function getSupabase() {
   return browserClient;
 }
 
+// True only for a `pnpm dev:local` dev server, which points the client at the
+// local Supabase stack and exports NEXT_PUBLIC_SUPABASE_LOCAL=true. This is the
+// runtime guard; what keeps the local sign-in form out of production bundles is
+// the equivalent module-level constant in the login form, which the minifier can
+// fold away.
+export function localSupabaseAuth() {
+  return process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_SUPABASE_LOCAL === "true";
+}
+
 export function supabaseConfigurationError() {
   return process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
     ? null

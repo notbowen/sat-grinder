@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { getSupabase, supabaseConfigurationError } from "@/lib/supabase";
+import { getSupabase, localSupabaseAuth, supabaseConfigurationError } from "@/lib/supabase";
 
 type AuthContextValue = {
   session: Session | null;
@@ -10,6 +10,7 @@ type AuthContextValue = {
   loading: boolean;
   error: string | null;
   signInWithGoogle: () => Promise<void>;
+  signInWithLocalPassword: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -56,6 +57,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
       if (authError) { setError(authError.message); throw authError; }
+    },
+    // Local development only: the local Auth server has no Google provider, so
+    // /login offers an email account that is created on first use.
+    async signInWithLocalPassword(email, password) {
+      if (!localSupabaseAuth()) throw new Error("Password sign-in is available only against a local Supabase stack.");
+      setError(null);
+      const supabase = getSupabase();
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (!signInError) return;
+      if (!/invalid login credentials/i.test(signInError.message)) { setError(signInError.message); throw signInError; }
+      const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+      if (signUpError) { setError(signUpError.message); throw signUpError; }
+      if (!data.session) {
+        const message = "The local account was created without a session. Set `enable_confirmations = false` under [auth.email] in supabase/config.toml.";
+        setError(message);
+        throw new Error(message);
+      }
     },
     async signOut() {
       const { error: authError } = await getSupabase().auth.signOut();

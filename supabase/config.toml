@@ -45,8 +45,12 @@ jwt_expiry = 3600
 enable_signup = true
 enable_anonymous_sign_ins = false
 
+# This file configures the local stack only (`supabase start`); the hosted
+# project's settings live in the Supabase dashboard. Email sign-up is on so that
+# `pnpm dev:local` has a way in without Google OAuth, and confirmations are off
+# so the account is usable immediately.
 [auth.email]
-enable_signup = false
+enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
 

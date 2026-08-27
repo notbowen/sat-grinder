@@ -3,13 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "bash scripts/dev.sh",
+    "dev:local": "bash scripts/dev.sh --local",
+    "dev:hosted": "bash scripts/dev.sh --hosted",
     "build": "next build",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "question-bank:sync": "tsx scripts/sync-question-bank.ts"
+    "question-bank:sync": "tsx scripts/sync-question-bank.ts",
+    "supabase": "bash scripts/supabase.sh",
+    "db:reset": "bash scripts/supabase.sh db reset",
+    "question-bank:sync:local": "bash scripts/sync-question-bank-local.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

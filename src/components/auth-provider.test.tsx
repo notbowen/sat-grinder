@@ -8,19 +8,27 @@ const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   onAuthStateChange: vi.fn(),
   signInWithOAuth: vi.fn(),
+  signInWithPassword: vi.fn(),
+  signUp: vi.fn(),
   signOut: vi.fn(),
   unsubscribe: vi.fn(),
+  localSupabaseAuth: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
   supabaseConfigurationError: () => null,
+  localSupabaseAuth: () => mocks.localSupabaseAuth(),
   getSupabase: () => ({ auth: mocks }),
 }));
 
 function Controls() {
   const auth = useAuth();
   if (auth.loading) return <p>Loading</p>;
-  return <><button onClick={() => void auth.signInWithGoogle()}>Google</button><button onClick={() => void auth.signOut()}>Sign out</button></>;
+  return <>
+    <button onClick={() => void auth.signInWithGoogle()}>Google</button>
+    <button onClick={() => void auth.signInWithLocalPassword("dev@local.test", "localdev123").catch(() => {})}>Local</button>
+    <button onClick={() => void auth.signOut()}>Sign out</button>
+  </>;
 }
 
 beforeEach(() => {
@@ -28,7 +36,10 @@ beforeEach(() => {
   mocks.getSession.mockResolvedValue({ data: { session: null }, error: null });
   mocks.onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: mocks.unsubscribe } } });
   mocks.signInWithOAuth.mockResolvedValue({ error: null });
+  mocks.signInWithPassword.mockResolvedValue({ error: null });
+  mocks.signUp.mockResolvedValue({ data: { session: { access_token: "local" } }, error: null });
   mocks.signOut.mockResolvedValue({ error: null });
+  mocks.localSupabaseAuth.mockReturnValue(false);
 });
 
 afterEach(() => {
@@ -52,5 +63,29 @@ describe("AuthProvider", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
     await waitFor(() => expect(mocks.signOut).toHaveBeenCalledOnce());
+  });
+
+  it("creates the local development account only when it does not exist yet", async () => {
+    mocks.localSupabaseAuth.mockReturnValue(true);
+    mocks.signInWithPassword.mockResolvedValueOnce({ error: { message: "Invalid login credentials" } });
+    render(<AuthProvider><Controls /></AuthProvider>);
+    const credentials = { email: "dev@local.test", password: "localdev123" };
+
+    fireEvent.click(await screen.findByRole("button", { name: "Local" }));
+    await waitFor(() => expect(mocks.signUp).toHaveBeenCalledWith(credentials));
+    expect(mocks.signInWithPassword).toHaveBeenCalledWith(credentials);
+
+    fireEvent.click(screen.getByRole("button", { name: "Local" }));
+    await waitFor(() => expect(mocks.signInWithPassword).toHaveBeenCalledTimes(2));
+    expect(mocks.signUp).toHaveBeenCalledOnce();
+  });
+
+  it("refuses password sign-in against a hosted project", async () => {
+    render(<AuthProvider><Controls /></AuthProvider>);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Local" }));
+    await waitFor(() => expect(mocks.localSupabaseAuth).toHaveBeenCalled());
+    expect(mocks.signInWithPassword).not.toHaveBeenCalled();
+    expect(mocks.signUp).not.toHaveBeenCalled();
   });
 });

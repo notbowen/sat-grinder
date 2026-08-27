@@ -2,11 +2,6 @@
 
 SAT Grinder is a static Next.js application for medium and hard Reading & Writing and Math practice. Cloudflare Pages serves the exported frontend, while Supabase provides Google authentication, Postgres persistence, transactional grading RPCs, row-level security, and private question-asset storage.
 
-## Tasks
-
-- [ ] Finish testing friendship feature
-- [ ] Migrate Supabase to `ap-southeast-1`
-
 ## Architecture
 
 - Next.js 16 static export (`out/`) with no application server or API routes.
@@ -28,7 +23,7 @@ pnpm dev
 Set these public values in `.env.local`:
 
 ```dotenv
-NEXT_PUBLIC_SUPABASE_URL=https://rigrymriolaubfubhcfx.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://sxrppeuogdwbsjzvpixq.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
@@ -40,7 +35,7 @@ Apply migrations in filename order from `supabase/migrations/`. Database tests a
 
 1. In Google Cloud, create a Web OAuth client and add this authorized redirect URI:
 
-   `https://rigrymriolaubfubhcfx.supabase.co/auth/v1/callback`
+   `https://sxrppeuogdwbsjzvpixq.supabase.co/auth/v1/callback`
 
 2. In Supabase Auth providers, enable Google and enter the client ID and secret.
 3. In Supabase URL Configuration, set the production Pages/custom domain as the Site URL. Add the production `/auth/callback/**`, `https://**.satgrinder.pages.dev/auth/callback/**` for Cloudflare previews, and `http://localhost:3000/auth/callback/**` as allowed redirect URLs. The callback carries the page that initiated sign-in in its query string, so the trailing `**` is required.
@@ -62,7 +57,7 @@ The export includes `public/_headers`, which supplies the security headers and p
 Manual local runs require server-side credentials and the explicit authorization assertion:
 
 ```bash
-SUPABASE_URL=https://rigrymriolaubfubhcfx.supabase.co \
+SUPABASE_URL=https://sxrppeuogdwbsjzvpixq.supabase.co \
 SUPABASE_SERVICE_ROLE_KEY=... \
 COLLEGE_BOARD_EQB_AUTHORIZED=true \
 pnpm question-bank:sync

@@ -19,7 +19,7 @@ type Feedback = { correct: boolean; message: string; firstAttempt?: boolean; com
 
 export function QuizCard({ sessionId, question, resolved, total, onRefresh }: { sessionId: string; question: Question; resolved: number; total: number; onRefresh: () => Promise<void> }) {
   const router = useRouter(); const [response, setResponse] = useState(""); const [feedback, setFeedback] = useState<Feedback | null>(null); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const [abandoning, setAbandoning] = useState(false);
-  const [eliminatorEnabled, setEliminatorEnabled] = useState(false); const [eliminatedChoices, setEliminatedChoices] = useState<string[]>([]); const [eliminatorAnnouncement, setEliminatorAnnouncement] = useState("");
+  const [eliminatorEnabled, setEliminatorEnabled] = useState(true); const [eliminatedChoices, setEliminatedChoices] = useState<string[]>([]); const [eliminatorAnnouncement, setEliminatorAnnouncement] = useState("");
   const attemptTimer = useActiveAttemptTimer(`${sessionId}:${question.id}`);
 
   useLayoutEffect(() => {

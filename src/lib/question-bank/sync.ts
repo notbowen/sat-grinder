@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import sanitizeHtml from "sanitize-html";
 import { z } from "zod";
+import { normalizeQuestionHtml } from "@/lib/question-html";
 
 const API_BASE = "https://qbank-api.collegeboard.org/msreportingquestionbank-prod/questionbank";
 const ASSET_BUCKET = "question-assets";
@@ -114,12 +115,12 @@ function filterSvgReferences(tagName: string, attribs: sanitizeHtml.Attributes) 
 }
 
 export function sanitizeQuestionHtml(html: string) {
-  return sanitizeHtml(html, {
+  return normalizeQuestionHtml(sanitizeHtml(html, {
     allowedTags,
     allowedAttributes: {
       "*": ["class", "id", "aria-hidden", "aria-label", "role"],
       p: ["style"], span: ["style"], math: ["xmlns", "alttext", "display"],
-      mfenced: ["open", "close", "separators"], img: ["src", "alt", "width", "height"],
+      mfenced: ["open", "close", "separators"], mo: ["fence", "stretchy"], img: ["src", "alt", "width", "height"],
       td: ["colspan", "rowspan"], th: ["colspan", "rowspan"], annotation: ["encoding"],
       svg: ["width", "height", "viewBox", "version", "xmlns", "xmlns:xlink", "preserveAspectRatio", ...svgStyleAttributes],
       g: ["clip-path", "fill", "font-family", "font-size", "opacity", "text-anchor", "transform", ...svgStyleAttributes],
@@ -152,7 +153,7 @@ export function sanitizeQuestionHtml(html: string) {
     },
     transformTags: { "*": filterSvgReferences },
     parser: { lowerCaseTags: false, lowerCaseAttributeNames: false },
-  });
+  }));
 }
 
 function extension(mime: string) {

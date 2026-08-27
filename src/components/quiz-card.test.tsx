@@ -41,11 +41,16 @@ afterEach(() => {
 });
 
 describe("QuizCard choice eliminator", () => {
+  it("starts with choice elimination enabled", () => {
+    render(<QuizCard sessionId="session-1" question={question} resolved={0} total={1} onRefresh={async () => {}} />);
+
+    expect(screen.getByRole("button", { name: "Eliminator on" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Cross out choice A" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Cross out choice B" })).not.toBeNull();
+  });
+
   it("crosses out and restores a choice without selecting it", () => {
     const { container } = render(<QuizCard sessionId="session-1" question={question} resolved={0} total={1} onRefresh={async () => {}} />);
-
-    expect(screen.queryByRole("button", { name: "Cross out choice A" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Eliminate choices" }));
 
     const optionA = container.querySelector<HTMLInputElement>('input[value="A"]');
     expect(optionA).not.toBeNull();
@@ -72,7 +77,6 @@ describe("QuizCard choice eliminator", () => {
     expect(optionB?.checked).toBe(true);
     expect(screen.getByRole("button", { name: "Check answer" }).hasAttribute("disabled")).toBe(false);
 
-    fireEvent.click(screen.getByRole("button", { name: "Eliminate choices" }));
     fireEvent.click(screen.getByRole("button", { name: "Cross out choice B" }));
 
     expect(optionB?.checked).toBe(false);
@@ -88,6 +92,15 @@ describe("QuizCard choice eliminator", () => {
 
     expect(optionB?.disabled).toBe(true);
     expect(screen.getByRole("button", { name: "Undo elimination of choice B" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Cross out choice A" })).not.toBeNull();
+  });
+
+  it("can hide unused elimination controls", () => {
+    render(<QuizCard sessionId="session-1" question={question} resolved={0} total={1} onRefresh={async () => {}} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Eliminator on" }));
+
+    expect(screen.getByRole("button", { name: "Eliminate choices" }).getAttribute("aria-pressed")).toBe("false");
     expect(screen.queryByRole("button", { name: "Cross out choice A" })).toBeNull();
   });
 

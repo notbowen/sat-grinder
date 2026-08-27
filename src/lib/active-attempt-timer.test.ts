@@ -1,21 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { ActiveAttemptTimer } from "@/lib/active-attempt-timer";
+import { ActiveAttemptTimer, MAX_RECORDED_ATTEMPT_MS } from "@/lib/active-attempt-timer";
 
 describe("ActiveAttemptTimer", () => {
-  it("counts only visible, focused time", () => {
+  it("counts wall-clock time from start until pause", () => {
     const timer = new ActiveAttemptTimer(0);
-    timer.setAvailability(false, false, 1_000);
-    timer.setAvailability(true, true, 6_000);
 
-    expect(timer.pause(8_000)).toBe(3_000);
+    expect(timer.pause(8_000)).toBe(8_000);
   });
 
-  it("caps an inactive span at the idle threshold", () => {
-    const timer = new ActiveAttemptTimer(0, true, true, 5_000);
+  it("keeps counting through long inactive spans", () => {
+    const timer = new ActiveAttemptTimer(0);
 
-    expect(timer.elapsed(9_000)).toBe(5_000);
-    timer.recordActivity(10_000);
-    expect(timer.pause(12_000)).toBe(7_000);
+    expect(timer.elapsed(10 * 60 * 1000)).toBe(10 * 60 * 1000);
+    expect(timer.pause(12 * 60 * 1000)).toBe(12 * 60 * 1000);
   });
 
   it("resets timing between answer attempts", () => {
@@ -25,5 +22,11 @@ describe("ActiveAttemptTimer", () => {
     timer.reset(2_000, false);
     timer.resume(3_000);
     expect(timer.pause(4_500)).toBe(1_500);
+  });
+
+  it("caps recorded time at one hour", () => {
+    const timer = new ActiveAttemptTimer(0);
+
+    expect(timer.pause(MAX_RECORDED_ATTEMPT_MS + 5_000)).toBe(MAX_RECORDED_ATTEMPT_MS);
   });
 });

@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Eraser, Underline } from "lucide-react";
+import { normalizeQuestionHtml } from "@/lib/question-html";
 
 type AnnotationStyle = "yellow" | "blue" | "pink" | "underline";
 
@@ -148,24 +149,25 @@ export function HighlightableQuestionHtml({
   const [annotations, setAnnotations] = useState<TextAnnotation[]>([]);
   const [toolbar, setToolbar] = useState<ToolbarState | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const normalizedHtml = html ? normalizeQuestionHtml(html) : html;
 
   useLayoutEffect(() => {
     const root = rootRef.current;
-    if (!root || !html) return;
-    root.innerHTML = html;
+    if (!root || !normalizedHtml) return;
+    root.innerHTML = normalizedHtml;
     let stored: string | null = null;
     try { stored = sessionStorage.getItem(`sat-grinder:highlights:${storageKey}`); } catch { /* Storage may be disabled by browser policy. */ }
     const restored = parseAnnotations(stored, root.textContent?.length ?? 0);
     setAnnotations(restored);
     setToolbar(null);
-  }, [html, storageKey]);
+  }, [normalizedHtml, storageKey]);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
-    if (!root || !html) return;
-    root.innerHTML = html;
+    if (!root || !normalizedHtml) return;
+    root.innerHTML = normalizedHtml;
     for (const annotation of annotations) wrapAnnotation(root, annotation);
-  }, [annotations, html]);
+  }, [annotations, normalizedHtml]);
 
   useEffect(() => {
     function dismiss(event: PointerEvent) {
@@ -225,7 +227,7 @@ export function HighlightableQuestionHtml({
       className="question-html"
       onPointerUp={showToolbar}
       onKeyUp={(event) => event.key === "Escape" ? setToolbar(null) : showToolbar(event)}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: normalizedHtml }}
     />
     {toolbar && <div
       className="question-highlight-toolbar"

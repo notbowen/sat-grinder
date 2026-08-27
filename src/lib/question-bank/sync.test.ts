@@ -72,10 +72,17 @@ describe("sanitizeQuestionHtml", () => {
     expect(clean).not.toContain("javascript");
   });
 
-  it("preserves MathML absolute-value fences", () => {
+  it("normalizes MathML absolute-value fences for consistent browser rendering", () => {
     const clean = sanitizeQuestionHtml('<math><mfenced open="|" close="|"><mi>x</mi></mfenced></math>');
 
-    expect(clean).toContain('<mfenced open="|" close="|">');
+    expect(clean).toContain('<mrow><mo fence="true" stretchy="true">|</mo><mi>x</mi><mo fence="true" stretchy="true">|</mo></mrow>');
+    expect(clean).not.toContain("mfenced");
+  });
+
+  it("keeps explicit absolute-value operators", () => {
+    const html = '<math><mrow><mo fence="true" stretchy="true">|</mo><mi>x</mi><mo fence="true" stretchy="true">|</mo></mrow></math>';
+
+    expect(sanitizeQuestionHtml(html)).toContain('<mo fence="true" stretchy="true">|</mo><mi>x</mi><mo fence="true" stretchy="true">|</mo>');
   });
 
   it("preserves MathML angle notation", () => {

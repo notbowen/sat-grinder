@@ -5,13 +5,27 @@ import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 
+function getSafeReturnPath(searchParams: URLSearchParams) {
+  const returnTo = searchParams.get("returnTo");
+  if (!returnTo) return "/dashboard/";
+
+  try {
+    const returnUrl = new URL(returnTo, window.location.origin);
+    if (returnUrl.origin !== window.location.origin) return "/dashboard/";
+    return `${returnUrl.pathname}${returnUrl.search}${returnUrl.hash}`;
+  } catch {
+    return "/dashboard/";
+  }
+}
+
 export default function AuthCallbackPage() {
   const router = useRouter();
   const [error, setError] = useState("");
 
   useEffect(() => {
     void Promise.resolve().then(async () => {
-      const code = new URLSearchParams(window.location.search).get("code");
+      const searchParams = new URLSearchParams(window.location.search);
+      const code = searchParams.get("code");
       if (!code) { setError("Google did not return a valid authorization code."); return; }
       const supabase = getSupabase();
       const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
@@ -19,7 +33,7 @@ export default function AuthCallbackPage() {
       else {
         const { error: profileError } = await supabase.rpc("sync_oauth_profile");
         if (profileError) setError(profileError.message);
-        else router.replace("/dashboard/");
+        else router.replace(getSafeReturnPath(searchParams));
       }
     });
   }, [router]);

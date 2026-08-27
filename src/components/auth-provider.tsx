@@ -45,10 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error,
     async signInWithGoogle() {
       setError(null);
+      const returnTo = window.location.href;
+      const callbackUrl = new URL("/auth/callback/", returnTo);
+      callbackUrl.searchParams.set("returnTo", returnTo);
       const { error: authError } = await getSupabase().auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback/`,
+          redirectTo: callbackUrl.toString(),
           scopes: "openid email profile",
         },
       });

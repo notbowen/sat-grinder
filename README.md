@@ -43,7 +43,7 @@ Apply migrations in filename order from `supabase/migrations/`. Database tests a
    `https://rigrymriolaubfubhcfx.supabase.co/auth/v1/callback`
 
 2. In Supabase Auth providers, enable Google and enter the client ID and secret.
-3. In Supabase URL Configuration, set the production Pages/custom domain as the Site URL. Add the production `/auth/callback/`, Cloudflare preview callback pattern, and `http://localhost:3000/auth/callback/` as allowed redirect URLs.
+3. In Supabase URL Configuration, set the production Pages/custom domain as the Site URL. Add the production `/auth/callback/**`, `https://**.satgrinder.pages.dev/auth/callback/**` for Cloudflare previews, and `http://localhost:3000/auth/callback/**` as allowed redirect URLs. The callback carries the page that initiated sign-in in its query string, so the trailing `**` is required.
 4. Keep the requested scopes at `openid email profile`.
 
 ## Deploy to Cloudflare Pages

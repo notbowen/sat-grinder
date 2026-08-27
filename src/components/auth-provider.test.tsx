@@ -24,6 +24,7 @@ function Controls() {
 }
 
 beforeEach(() => {
+  window.history.replaceState({}, "", "/login/?from=dashboard#sign-in");
   mocks.getSession.mockResolvedValue({ data: { session: null }, error: null });
   mocks.onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: mocks.unsubscribe } } });
   mocks.signInWithOAuth.mockResolvedValue({ error: null });
@@ -43,7 +44,10 @@ describe("AuthProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "Google" }));
     await waitFor(() => expect(mocks.signInWithOAuth).toHaveBeenCalledWith({
       provider: "google",
-      options: { redirectTo: "http://localhost:3000/auth/callback/", scopes: "openid email profile" },
+      options: {
+        redirectTo: "http://localhost:3000/auth/callback/?returnTo=http%3A%2F%2Flocalhost%3A3000%2Flogin%2F%3Ffrom%3Ddashboard%23sign-in",
+        scopes: "openid email profile",
+      },
     }));
 
     fireEvent.click(screen.getByRole("button", { name: "Sign out" }));

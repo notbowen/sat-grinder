@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Newsreader, Noto_Serif, Space_Grotesk } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
+import { GoogleTagManager } from "@next/third-parties/google";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
@@ -17,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" className={`${grotesk.variable} ${newsreader.variable} ${notoSerif.variable}`}><body><AuthProvider>{children}</AuthProvider></body></html>;
+  return <html lang="en" className={`${grotesk.variable} ${newsreader.variable} ${notoSerif.variable}`}><GoogleTagManager gaId="GTM-TN6RDGWX" /><body><AuthProvider>{children}</AuthProvider></body></html>;
 }

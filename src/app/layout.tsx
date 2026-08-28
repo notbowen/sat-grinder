@@ -18,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" className={`${grotesk.variable} ${newsreader.variable} ${notoSerif.variable}`}><GoogleTagManager gaId="GTM-TN6RDGWX" /><body><AuthProvider>{children}</AuthProvider></body></html>;
+  return <html lang="en" className={`${grotesk.variable} ${newsreader.variable} ${notoSerif.variable}`}><GoogleTagManager gtmId="GTM-TN6RDGWX" /><body><AuthProvider>{children}</AuthProvider></body></html>;
 }

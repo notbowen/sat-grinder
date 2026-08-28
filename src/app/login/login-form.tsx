@@ -35,16 +35,16 @@ export function LoginForm() {
 
   return <div className="mt-8 space-y-5">
     {(error || authError) && <p className="form-error" role="alert">{error || authError}</p>}
-    <button type="button" className="primary-button w-full" disabled={loading || authLoading} onClick={submit}>
-      {loading || authLoading ? <LoaderCircle className="size-5 animate-spin" /> : <><span className="grid size-6 place-items-center rounded-full bg-white text-sm font-black text-[#4285f4]">G</span> Continue with Google</>}
+    <button type="button" className="btn btn-primary w-full" disabled={loading || authLoading} onClick={submit}>
+      {loading || authLoading ? <LoaderCircle className="size-5 animate-spin" /> : <><span className="google-mark" aria-hidden="true">G</span> Continue with Google</>}
     </button>
-    <p className="text-center text-xs leading-5 text-[var(--muted)]">SAT Grinder receives only your basic Google profile and email address.</p>
-    {LOCAL_SUPABASE_AUTH && <form className="space-y-4 rounded-2xl border border-dashed border-[var(--line)] p-4" onSubmit={submitLocal}>
-      <p className="metric-label">Local Supabase</p>
-      <p className="text-xs leading-5 text-[var(--muted)]">Google is not configured on the local stack. This account is created on first use and never exists in production.</p>
+    <p className="small muted text-center">We only receive your Google name, email, and avatar.</p>
+    {LOCAL_SUPABASE_AUTH && <form className="dev-login" onSubmit={submitLocal}>
+      <p className="stat-label">Local Supabase</p>
+      <p className="small muted">Google is not set up locally. This account is created on first use and never exists in production.</p>
       <label className="form-label">Email<input className="form-input" type="email" autoComplete="off" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
       <label className="form-label">Password<input className="form-input" type="password" autoComplete="off" required minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-      <button type="submit" className="secondary-button w-full" disabled={loading || authLoading}>Sign in as a local test user</button>
+      <button type="submit" className="btn btn-secondary w-full" disabled={loading || authLoading}>Sign in as a local test user</button>
     </form>}
   </div>;
 }

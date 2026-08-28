@@ -49,7 +49,7 @@ describe("FriendsPage", () => {
     render(<FriendsPage />);
 
     expect(await screen.findByRole("heading", { name: "Your circle, the last month" })).not.toBeNull();
-    expect(screen.getByText("There is no global leaderboard.", { exact: false })).not.toBeNull();
+    expect(screen.getByText("No global leaderboard.", { exact: false })).not.toBeNull();
     expect(screen.getByText("Current Learner")).not.toBeNull();
     expect(screen.getAllByText("Ada Friend").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "1 day" })).not.toBeNull();
@@ -62,7 +62,7 @@ describe("FriendsPage", () => {
 
   it("sends and accepts email friend requests", async () => {
     render(<FriendsPage />);
-    await screen.findByRole("heading", { name: "Needs your response" });
+    await screen.findByRole("heading", { name: "Incoming" });
 
     fireEvent.change(screen.getByLabelText("Add a friend by email"), { target: { value: "new@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Send request" }));
@@ -80,7 +80,7 @@ describe("FriendsPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Remove Ada Friend" }));
 
-    expect(globalThis.confirm).toHaveBeenCalledWith("Remove Ada Friend from your friends? You can send a new request later.");
+    expect(globalThis.confirm).toHaveBeenCalledWith("Remove Ada Friend? You can invite them again later.");
     await waitFor(() => expect(mocks.removeFriend).toHaveBeenCalledWith("friend"));
     expect(mocks.getFriendsLeaderboard.mock.calls.length).toBeGreaterThan(1);
     expect(await screen.findByText("Removed Ada Friend from your friends.")).not.toBeNull();

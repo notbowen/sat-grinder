@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Wordmark } from "@/components/app-shell";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -7,11 +8,22 @@ export default function LoginPage() {
   return (
     <main className="login-page">
       <section className="login-brand">
-        <div className="brand-lockup"><span className="brand-mark">SG</span><span>SAT Grinder</span></div>
-        <div className="max-w-xl"><p className="eyebrow text-white/60">Practice with purpose</p><h1 className="mt-4 font-[family-name:var(--font-display)] text-5xl font-bold tracking-[-0.055em] text-white sm:text-6xl">Turn hard questions into familiar ones.</h1><p className="mt-5 max-w-lg text-lg leading-8 text-white/65">Work through medium and hard SAT questions, get immediate feedback, and keep every miss in rotation until you own it.</p></div>
-        <div className="flex gap-6 text-sm font-semibold text-white/55"><span>Reading & Writing</span><span>Math</span><span>Medium + hard</span></div>
+        <Wordmark />
+        <div>
+          <p className="eyebrow">Digital SAT · medium and hard only</p>
+          <h1 className="login-brand-title mt-5">Turn hard questions into <em>familiar</em> ones.</h1>
+          <p className="login-brand-copy">Bluebook-style questions, instant feedback, and a review queue that brings back every miss until you get it right.</p>
+        </div>
+        <div className="login-brand-foot"><span>Reading &amp; Writing</span><span>Math</span><span>Medium + hard</span><span>Stats with denominators</span></div>
       </section>
-      <section className="login-panel"><div className="w-full max-w-md"><p className="eyebrow">Welcome</p><h2 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-bold tracking-[-0.045em]">Ready for another round?</h2><p className="mt-3 text-[var(--muted)]">Continue with Google to create your account or return to your progress.</p><LoginForm /></div></section>
+      <section className="login-panel">
+        <div className="login-form-card">
+          <p className="eyebrow">Welcome</p>
+          <h2 className="display-2">Sign in</h2>
+          <p className="lede mt-4" style={{ fontSize: ".95rem" }}>Use Google to start or pick up where you left off.</p>
+          <LoginForm />
+        </div>
+      </section>
     </main>
   );
 }

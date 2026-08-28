@@ -10,7 +10,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
   const router = useRouter();
   const { user, loading } = useAuth();
   useEffect(() => { if (!loading && !user) router.replace("/login/"); }, [loading, router, user]);
-  if (loading || !user) return <main className="grid min-h-screen place-items-center"><LoaderCircle className="size-7 animate-spin text-[var(--blue)]" aria-label="Loading account" /></main>;
+  if (loading || !user) return <main className="loading-screen min-h-screen"><LoaderCircle className="size-6 animate-spin" aria-label="Loading account" /></main>;
   const metadata = user.user_metadata;
   const name = metadata.full_name || metadata.name || user.email?.split("@")[0] || "Learner";
   const avatarUrl = metadata.avatar_url || metadata.picture || null;

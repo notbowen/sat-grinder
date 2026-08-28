@@ -128,7 +128,7 @@ export default function FriendsPage() {
   }
 
   async function removeAcceptedFriend(friend: FriendProfile) {
-    if (!globalThis.confirm(`Remove ${friend.name} from your friends? You can send a new request later.`)) return;
+    if (!globalThis.confirm(`Remove ${friend.name}? You can invite them again later.`)) return;
     setRemovingFriend(friend.id); setError(""); setNotice("");
     try {
       await removeFriend(friend.id);
@@ -141,41 +141,41 @@ export default function FriendsPage() {
 
   const selectedWindow = windows.find((option) => option.value === window) ?? windows[1];
   const initialLoading = !social && !leaderboard && (loadingSocial || loadingLeaderboard);
-  if (initialLoading) return <main className="grid min-h-[65vh] place-items-center"><LoaderCircle className="size-7 animate-spin text-[var(--blue)]" aria-label="Loading friends" /></main>;
+  if (initialLoading) return <main className="loading-screen"><LoaderCircle className="size-6 animate-spin" aria-label="Loading friends" /></main>;
 
-  return <main className="page-container friends-page">
-    <div className="dashboard-heading">
+  return <main className="page friends-page">
+    <div className="page-head">
       <div>
         <p className="eyebrow">Friends only</p>
-        <h1 className="page-title">Progress feels better together.</h1>
-        <p className="page-subtitle">Invite people you know, approve every connection, and compare practice progress. There is no global leaderboard.</p>
+        <h1 className="page-title">Compare with friends.</h1>
+        <p className="page-subtitle">Invite people you know and approve every connection. No global leaderboard.</p>
       </div>
       <form className="friend-invite" onSubmit={submitRequest}>
         <label className="form-label" htmlFor="friend-email">Add a friend by email</label>
         <div className="friend-invite-row">
           <input id="friend-email" className="form-input" type="email" autoComplete="email" placeholder="friend@example.com" value={email} onChange={(event) => setEmail(event.target.value)} disabled={submitting} required />
-          <button type="submit" className="primary-button" disabled={submitting || !email.trim()}>
+          <button type="submit" className="btn btn-primary" disabled={submitting || !email.trim()}>
             {submitting ? <LoaderCircle className="size-4 animate-spin" /> : <MailPlus className="size-4" />}
             Send request
           </button>
         </div>
-        <p>They must accept before either of you appears on the other&apos;s leaderboard.</p>
+        <p>You both appear once they accept.</p>
       </form>
     </div>
 
-    {error && <p className="form-error mb-4" role="alert">{error}</p>}
-    {notice && <p className="form-success mb-4" role="status"><Check className="size-4" />{notice}</p>}
+    {error && <p className="form-error mt-6" role="alert">{error}</p>}
+    {notice && <p className="form-success mt-6" role="status"><Check className="size-4" />{notice}</p>}
 
-    <section className="analytics-panel friends-leaderboard" aria-busy={loadingLeaderboard}>
+    <section className="panel friends-leaderboard mt-8" aria-busy={loadingLeaderboard}>
       <div className="section-heading friends-section-heading">
         <div><p className="eyebrow">Leaderboard</p><h2 className="section-title">Your circle, {selectedWindow.label}</h2></div>
-        <div className="window-picker" aria-label="Leaderboard time range">
+        <div className="seg" role="group" aria-label="Leaderboard time range">
           {windows.map((option) => <button key={option.value} type="button" className={window === option.value ? "active" : ""} aria-pressed={window === option.value} onClick={() => selectWindow(option.value)}>{option.shortLabel}</button>)}
         </div>
       </div>
 
-      {loadingLeaderboard && <div className="leaderboard-updating"><LoaderCircle className="size-4 animate-spin" /> Updating standings</div>}
-      {leaderboard && leaderboard.members.length === 1 && <div className="friends-empty-callout"><UsersRound className="size-5" /><p><strong>Your first rival is one accepted request away.</strong><span>Send an invite above; pending requests never appear here.</span></p></div>}
+      {loadingLeaderboard && <div className="leaderboard-updating loading-inline"><LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" /> Updating</div>}
+      {leaderboard && leaderboard.members.length === 1 && <div className="friends-empty-callout"><UsersRound className="size-5" /><p><strong>No friends yet.</strong><span>Send an invite above. Pending requests do not show here.</span></p></div>}
 
       {leaderboard && <div className="leaderboard-table" role="table" aria-label={`Friends leaderboard for ${selectedWindow.label}`}>
         <div className="leaderboard-header" role="row">
@@ -196,29 +196,29 @@ export default function FriendsPage() {
     </section>
 
     <div className="friends-management-grid">
-      <section className="analytics-panel">
-        <div className="section-heading"><div><p className="eyebrow">Requests</p><h2 className="section-title">Needs your response</h2></div><span className="request-count">{social?.incoming.length ?? 0}</span></div>
-        {loadingSocial && !social ? <div className="analytics-empty compact"><LoaderCircle className="size-5 animate-spin" /></div>
+      <section className="panel">
+        <div className="section-heading"><div><p className="eyebrow">Requests</p><h2 className="section-title">Incoming</h2></div><span className="request-count">{social?.incoming.length ?? 0}</span></div>
+        {loadingSocial && !social ? <div className="chart-empty compact"><LoaderCircle className="size-5 animate-spin" /></div>
           : social?.incoming.length ? <div className="friend-request-list">{social.incoming.map((request) => <article key={request.id}>
               <RequestIdentity request={request} />
               <span className="request-date"><Clock3 className="size-3.5" /> {requestDate(request.createdAt)}</span>
               <div className="request-actions">
-                <button type="button" className="primary-button" disabled={respondingTo === request.id} onClick={() => void respond(request, true)}>{respondingTo === request.id ? <LoaderCircle className="size-4 animate-spin" /> : <UserRoundCheck className="size-4" />} Accept</button>
-                <button type="button" className="secondary-button" disabled={respondingTo === request.id} onClick={() => void respond(request, false)}><X className="size-4" /> Decline</button>
+                <button type="button" className="btn btn-primary" disabled={respondingTo === request.id} onClick={() => void respond(request, true)}>{respondingTo === request.id ? <LoaderCircle className="size-4 animate-spin" /> : <UserRoundCheck className="size-4" />} Accept</button>
+                <button type="button" className="btn btn-secondary" disabled={respondingTo === request.id} onClick={() => void respond(request, false)}><X className="size-4" /> Decline</button>
               </div>
             </article>)}</div>
-          : <div className="analytics-empty compact"><Check className="size-5" /><p>You are all caught up.</p></div>}
+          : <div className="chart-empty compact"><Check className="size-5" /><p>Nothing waiting.</p></div>}
       </section>
 
-      <section className="analytics-panel">
-        <div className="section-heading"><div><p className="eyebrow">Sent</p><h2 className="section-title">Waiting for acceptance</h2></div><span className="request-count muted">{social?.outgoing.length ?? 0}</span></div>
+      <section className="panel">
+        <div className="section-heading"><div><p className="eyebrow">Sent</p><h2 className="section-title">Pending</h2></div><span className="request-count muted">{social?.outgoing.length ?? 0}</span></div>
         {social?.outgoing.length ? <div className="friend-request-list outgoing">{social.outgoing.map((request) => <article key={request.id}>
           <RequestIdentity request={request} /><span className="pending-chip"><Send className="size-3.5" /> Pending</span>
-        </article>)}</div> : <div className="analytics-empty compact"><Send className="size-5" /><p>No requests waiting.</p></div>}
+        </article>)}</div> : <div className="chart-empty compact"><Send className="size-5" /><p>No requests waiting.</p></div>}
       </section>
     </div>
 
-    <section className="analytics-panel friends-list-panel">
+    <section className="panel friends-list-panel">
       <div className="section-heading"><div><p className="eyebrow">Your circle</p><h2 className="section-title">Accepted friends</h2></div><span className="request-count accepted">{social?.friends.length ?? 0}</span></div>
       {social?.friends.length ? <div className="accepted-friends-grid">{social.friends.map((friend) => <article key={friend.id}>
         <div className="friend-identity"><UserAvatar name={friend.name} avatarUrl={friend.avatarUrl} className="size-12" /><div><strong>{friend.name}</strong><span>{friend.email}</span></div></div>
@@ -228,7 +228,7 @@ export default function FriendsPage() {
             {removingFriend === friend.id ? <LoaderCircle className="size-3.5 animate-spin" /> : <UserMinus className="size-3.5" />} Remove
           </button>
         </div>
-      </article>)}</div> : <div className="analytics-empty"><UsersRound className="size-6" /><p>Accepted friends will appear here and on your private leaderboard.</p></div>}
+      </article>)}</div> : <div className="chart-empty"><UsersRound className="size-6" /><p>Accepted friends appear here and on your leaderboard.</p></div>}
     </section>
   </main>;
 }

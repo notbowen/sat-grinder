@@ -26,7 +26,7 @@ export default function AuthCallbackPage() {
     void Promise.resolve().then(async () => {
       const searchParams = new URLSearchParams(window.location.search);
       const code = searchParams.get("code");
-      if (!code) { setError("Google did not return a valid authorization code."); return; }
+      if (!code) { setError("Google did not return a sign-in code."); return; }
       const supabase = getSupabase();
       const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
       if (exchangeError) setError(exchangeError.message);
@@ -38,10 +38,10 @@ export default function AuthCallbackPage() {
     });
   }, [router]);
 
-  return <main className="grid min-h-screen place-items-center bg-[var(--paper)] p-6">
-    <div className="max-w-md rounded-2xl border border-[var(--line)] bg-white p-8 text-center">
-      {error ? <><p className="form-error" role="alert">{error}</p><a href="/login/" className="secondary-button mt-5">Return to sign in</a></>
-        : <><LoaderCircle className="mx-auto size-7 animate-spin text-[var(--blue)]" /><p className="mt-4 font-bold">Finishing Google sign-in…</p></>}
+  return <main className="grid min-h-screen place-items-center p-6">
+    <div className="panel w-full max-w-md" style={{ borderColor: "var(--ink)" }}>
+      {error ? <><p className="form-error" role="alert">{error}</p><a href="/login/" className="btn btn-secondary mt-5">Back to sign in</a></>
+        : <p className="loading-inline"><LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Finishing Google sign-in</p>}
     </div>
   </main>;
 }

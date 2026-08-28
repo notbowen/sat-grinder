@@ -15,6 +15,9 @@ const notoSerif = Noto_Serif({ subsets: ["latin"], weight: ["400", "700"], style
 export const metadata: Metadata = {
   title: { default: "SAT Grinder", template: "%s · SAT Grinder" },
   description: "Medium and hard digital SAT practice: Bluebook-style questions, a review queue that brings back every miss, and stats that show what you can do reliably.",
+  verification: {
+    google: "2ufRT05ep_8FEwzbuTtrA57BaDHDCdcb8esTjMxZtzw",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, BookOpen, LogOut, Sigma, UsersRound } from "lucide-react";
+import { BarChart3, BookOpen, LogOut, UsersRound } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { UserAvatar } from "@/components/user-avatar";
 
 const links = [
-  { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
-  { href: "/statistics", label: "Statistics", icon: Sigma },
-  { href: "/practice/random", label: "Practice", icon: BookOpen },
+  { href: "/practice", label: "Practice", icon: BookOpen },
+  { href: "/progress", label: "Progress", icon: BarChart3 },
   { href: "/friends", label: "Friends", icon: UsersRound },
 ];
 
@@ -23,10 +22,10 @@ export function AppShell({ user, children }: { user: { name: string; email: stri
   const pathname = usePathname(); const router = useRouter();
   const { signOut } = useAuth();
   async function leave() { await signOut(); router.replace("/login/"); }
-  const isActive = (href: string) => pathname.startsWith(href) || (href === "/practice/random" && pathname.startsWith("/practice"));
+  const isActive = (href: string) => pathname.startsWith(href);
   return <div className="min-h-screen">
     <header className="app-header"><div className="container app-header-inner">
-      <Wordmark href="/dashboard" />
+      <Wordmark href="/practice" />
       <nav className="primary-nav" aria-label="Primary navigation">
         {links.map(({ href, label }) => <Link key={href} href={href} className={`nav-link ${isActive(href) ? "nav-link-active" : ""}`} aria-current={isActive(href) ? "page" : undefined}>{label}</Link>)}
       </nav>

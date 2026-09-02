@@ -9,6 +9,12 @@ export function formatDuration(milliseconds: number) {
   return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
 }
 
+/** Minutes and seconds for a running clock: 0:07, 1:24, 12:05. */
+export function formatClock(milliseconds: number) {
+  const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
 export function formatPace(milliseconds: number | null) {
   if (milliseconds === null) return "—";
   const seconds = Math.round(milliseconds / 1000);
@@ -22,6 +28,23 @@ export function formatDate(value: string) {
 
 export function formatShortDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(value));
+}
+
+/** "Today", "Yesterday", or a short date for lists of recent sets. */
+export function formatRelativeDay(value: string, now = new Date()) {
+  const date = new Date(value);
+  const startOfDay = (input: Date) => new Date(input.getFullYear(), input.getMonth(), input.getDate()).getTime();
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / 86_400_000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  return formatShortDate(value);
+}
+
+/** Calendar date (YYYY-MM-DD) of "now" in the given zone; matches the dashboard's trend keys. */
+export function localDateKey(timezone: string, now = new Date()) {
+  const options = { year: "numeric", month: "2-digit", day: "2-digit" } as const;
+  try { return new Intl.DateTimeFormat("en-CA", { ...options, timeZone: timezone }).format(now); }
+  catch { return new Intl.DateTimeFormat("en-CA", options).format(now); }
 }
 
 export function formatTrendDate(value: string, granularity: DashboardData["trendGranularity"]) {
@@ -48,9 +71,18 @@ export function sectionLabel(section: "math" | "reading-writing") {
   return section === "math" ? "Math" : "Reading & Writing";
 }
 
-export const windowOptions: { value: DashboardData["window"]; label: string; phrase: string }[] = [
-  { value: "1d", label: "1 day", phrase: "the last day" },
-  { value: "14d", label: "2 weeks", phrase: "the last two weeks" },
-  { value: "30d", label: "1 month", phrase: "the last month" },
-  { value: "all", label: "All time", phrase: "all time" },
+/** Session subjects come from the server as "Mixed"; learners see "Mix". */
+export function subjectLabel(subject: string) {
+  return subject === "Mixed" ? "Mix" : subject;
+}
+
+export function plural(count: number, singular: string, pluralForm = `${singular}s`) {
+  return count === 1 ? singular : pluralForm;
+}
+
+export const windowOptions: { value: DashboardData["window"]; label: string; phrase: string; prior: string }[] = [
+  { value: "1d", label: "1 day", phrase: "Today", prior: "vs yesterday" },
+  { value: "14d", label: "2 weeks", phrase: "The last two weeks", prior: "vs prior 2 weeks" },
+  { value: "30d", label: "1 month", phrase: "The last month", prior: "vs prior month" },
+  { value: "all", label: "All time", phrase: "All time", prior: "vs prior period" },
 ];

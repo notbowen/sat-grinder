@@ -19,5 +19,6 @@ export function useActiveAttemptTimer(attemptKey: string) {
     pause: useCallback(() => timerRef.current?.pause(now()) ?? 0, []),
     resume: useCallback(() => timerRef.current?.resume(now()), []),
     reset: useCallback((startImmediately = true) => timerRef.current?.reset(now(), startImmediately), []),
+    elapsed: useCallback(() => timerRef.current?.elapsed(now()) ?? 0, []),
   };
 }

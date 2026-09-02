@@ -11,5 +11,7 @@ export default defineConfig({
   test: {
     environment: "node",
     setupFiles: ["./test/setup.ts"],
+    // Stale worktree copies of the repo must not run as a second test suite.
+    exclude: ["**/node_modules/**", "**/.delta/**", "**/.next/**", "**/out/**"],
   },
 });

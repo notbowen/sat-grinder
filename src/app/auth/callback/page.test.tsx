@@ -39,6 +39,6 @@ describe("OAuth callback", () => {
 
     render(<AuthCallbackPage />);
 
-    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/dashboard/"));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/practice/"));
   });
 });

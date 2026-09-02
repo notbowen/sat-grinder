@@ -1,0 +1,10 @@
+# Routes from before the September 2026 restructure. Static export cannot
+# redirect on its own, so the host does it.
+/dashboard/ /practice/ 301
+/dashboard /practice/ 301
+/statistics/ /progress/ 301
+/statistics /progress/ 301
+/practice/random/ /practice/ 301
+/practice/random /practice/ 301
+/practice/session/ /practice/ 301
+/practice/session /practice/ 301

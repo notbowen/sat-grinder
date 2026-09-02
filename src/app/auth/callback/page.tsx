@@ -7,14 +7,14 @@ import { getSupabase } from "@/lib/supabase";
 
 function getSafeReturnPath(searchParams: URLSearchParams) {
   const returnTo = searchParams.get("returnTo");
-  if (!returnTo) return "/dashboard/";
+  if (!returnTo) return "/practice/";
 
   try {
     const returnUrl = new URL(returnTo, window.location.origin);
-    if (returnUrl.origin !== window.location.origin) return "/dashboard/";
+    if (returnUrl.origin !== window.location.origin) return "/practice/";
     return `${returnUrl.pathname}${returnUrl.search}${returnUrl.hash}`;
   } catch {
-    return "/dashboard/";
+    return "/practice/";
   }
 }
 

@@ -18,7 +18,7 @@ export function LoginForm() {
   const [email, setEmail] = useState("dev@local.test");
   const [password, setPassword] = useState("localdev123");
 
-  useEffect(() => { if (!authLoading && user) router.replace("/dashboard/"); }, [authLoading, router, user]);
+  useEffect(() => { if (!authLoading && user) router.replace("/practice/"); }, [authLoading, router, user]);
 
   async function submit() {
     setLoading(true); setError("");
@@ -38,7 +38,7 @@ export function LoginForm() {
     <button type="button" className="btn btn-primary w-full" disabled={loading || authLoading} onClick={submit}>
       {loading || authLoading ? <LoaderCircle className="size-5 animate-spin" /> : <><span className="google-mark" aria-hidden="true">G</span> Continue with Google</>}
     </button>
-    <p className="small muted text-center">We only receive your Google name, email, and avatar.</p>
+    <p className="small muted text-center">We get your name, email and avatar. Nothing else.</p>
     {LOCAL_SUPABASE_AUTH && <form className="dev-login" onSubmit={submitLocal}>
       <p className="stat-label">Local Supabase</p>
       <p className="small muted">Google is not set up locally. This account is created on first use and never exists in production.</p>

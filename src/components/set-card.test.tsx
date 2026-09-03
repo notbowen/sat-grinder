@@ -124,28 +124,30 @@ describe("SetCard", () => {
     expect(mocks.replace).toHaveBeenCalledWith("/practice/");
   });
 
-  it("toggles timer visibility on click and persists across different tests", () => {
+  it("defaults to hidden clock logo, toggles visibility on click, and persists across different tests", () => {
     const { unmount } = renderCard({ sessionId: "session-1" });
 
-    const timerBtn = screen.getByRole("button", { name: /hide timer/i });
-    expect(timerBtn.textContent).toBe("0:00");
+    // Starts hidden with clock logo
+    const initialClockBtn = screen.getByRole("button", { name: /show timer/i });
+    expect(initialClockBtn.querySelector("svg")).not.toBeNull();
 
-    fireEvent.click(timerBtn);
-    const hiddenBtn = screen.getByRole("button", { name: /show timer/i });
-    expect(hiddenBtn.querySelector("svg")).not.toBeNull();
-    expect(localStorage.getItem("sat-grinder:timer-visible")).toBe("false");
+    // Click to show timer
+    fireEvent.click(initialClockBtn);
+    const visibleTimerBtn = screen.getByRole("button", { name: /hide timer/i });
+    expect(visibleTimerBtn.textContent).toBe("0:00");
+    expect(localStorage.getItem("sat-grinder:timer-visible")).toBe("true");
 
-    // Start a different test / session
+    // Start a different test / session - should remember it was shown
     unmount();
     renderCard({ sessionId: "session-2" });
 
-    const secondTestHiddenBtn = screen.getByRole("button", { name: /show timer/i });
-    expect(secondTestHiddenBtn.querySelector("svg")).not.toBeNull();
-
-    // Toggle back on
-    fireEvent.click(secondTestHiddenBtn);
     expect(screen.getByRole("button", { name: /hide timer/i }).textContent).toBe("0:00");
-    expect(localStorage.getItem("sat-grinder:timer-visible")).toBe("true");
+
+    // Toggle back to hidden clock logo
+    fireEvent.click(screen.getByRole("button", { name: /hide timer/i }));
+    const hiddenBtn = screen.getByRole("button", { name: /show timer/i });
+    expect(hiddenBtn.querySelector("svg")).not.toBeNull();
+    expect(localStorage.getItem("sat-grinder:timer-visible")).toBe("false");
   });
 
   it("persists cross-out toggle state across different tests", () => {

@@ -12,21 +12,21 @@ afterEach(() => localStorage.clear());
 
 describe("practice preferences", () => {
   describe("timer visibility", () => {
-    it("defaults to true when nothing is stored", () => {
-      expect(readTimerVisible()).toBe(true);
-    });
-
-    it("saves and reads false", () => {
-      saveTimerVisible(false);
+    it("defaults to false when nothing is stored", () => {
       expect(readTimerVisible()).toBe(false);
-      expect(localStorage.getItem("sat-grinder:timer-visible")).toBe("false");
     });
 
     it("saves and reads true", () => {
-      saveTimerVisible(false);
       saveTimerVisible(true);
       expect(readTimerVisible()).toBe(true);
       expect(localStorage.getItem("sat-grinder:timer-visible")).toBe("true");
+    });
+
+    it("saves and reads false", () => {
+      saveTimerVisible(true);
+      saveTimerVisible(false);
+      expect(readTimerVisible()).toBe(false);
+      expect(localStorage.getItem("sat-grinder:timer-visible")).toBe("false");
     });
 
     it("handles legacy string boolean or malformed JSON", () => {

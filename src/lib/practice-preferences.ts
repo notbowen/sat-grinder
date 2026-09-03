@@ -13,13 +13,13 @@ function parseBoolean(value: string | null, defaultValue: boolean): boolean {
   return value === "true";
 }
 
-/** Reads timer visibility preference from localStorage, defaulting to visible (true). */
+/** Reads timer visibility preference from localStorage, defaulting to hidden / clock icon (false). */
 export function readTimerVisible(): boolean {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined") return false;
   try {
-    return parseBoolean(localStorage.getItem(TIMER_VISIBLE_KEY), true);
+    return parseBoolean(localStorage.getItem(TIMER_VISIBLE_KEY), false);
   } catch {
-    return true;
+    return false;
   }
 }
 

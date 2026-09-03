@@ -40,6 +40,7 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof SetCard>> = {
 afterEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   vi.restoreAllMocks();
   mocks.submitPracticeAnswer.mockReset();
   mocks.abandonPracticeSession.mockReset();
@@ -121,6 +122,106 @@ describe("SetCard", () => {
     expect(window.confirm).toHaveBeenCalledWith("Stop this set? Answers so far are saved.");
     await vi.waitFor(() => expect(mocks.abandonPracticeSession).toHaveBeenCalledWith("session-1"));
     expect(mocks.replace).toHaveBeenCalledWith("/practice/");
+  });
+
+  it("toggles timer visibility on click and persists across different tests", () => {
+    const { unmount } = renderCard({ sessionId: "session-1" });
+
+    const timerBtn = screen.getByRole("button", { name: /hide timer/i });
+    expect(timerBtn.textContent).toBe("0:00");
+
+    fireEvent.click(timerBtn);
+    const hiddenBtn = screen.getByRole("button", { name: /show timer/i });
+    expect(hiddenBtn.querySelector("svg")).not.toBeNull();
+    expect(localStorage.getItem("sat-grinder:timer-visible")).toBe("false");
+
+    // Start a different test / session
+    unmount();
+    renderCard({ sessionId: "session-2" });
+
+    const secondTestHiddenBtn = screen.getByRole("button", { name: /show timer/i });
+    expect(secondTestHiddenBtn.querySelector("svg")).not.toBeNull();
+
+    // Toggle back on
+    fireEvent.click(secondTestHiddenBtn);
+    expect(screen.getByRole("button", { name: /hide timer/i }).textContent).toBe("0:00");
+    expect(localStorage.getItem("sat-grinder:timer-visible")).toBe("true");
+  });
+
+  it("persists cross-out toggle state across different tests", () => {
+    const { unmount } = renderCard({ sessionId: "session-1" });
+
+    const crossOutBtn = screen.getByRole("button", { name: "Cross out" });
+    expect(crossOutBtn.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(crossOutBtn);
+    expect(crossOutBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(localStorage.getItem("sat-grinder:cross-out-enabled")).toBe("false");
+
+    // Start a different test
+    unmount();
+    renderCard({ sessionId: "session-2" });
+
+    const secondTestBtn = screen.getByRole("button", { name: "Cross out" });
+    expect(secondTestBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByRole("button", { name: "Cross out choice A" })).toBeNull();
+  });
+
+  it("makes MCQ answers and elimination tools non-interactable after a correct submission", async () => {
+    mocks.submitPracticeAnswer.mockResolvedValue({ correct: true, message: "ok", firstAttempt: true, completed: false });
+    const { container } = renderCard();
+
+    const optionA = container.querySelector<HTMLInputElement>('input[value="A"]') as HTMLInputElement;
+    const optionB = container.querySelector<HTMLInputElement>('input[value="B"]') as HTMLInputElement;
+
+    fireEvent.click(optionA);
+    fireEvent.click(screen.getByRole("button", { name: "Check" }));
+
+    await screen.findByRole("heading", { name: "Correct, first try." });
+
+    // Answers should now be disabled
+    expect(optionA.disabled).toBe(true);
+    expect(optionB.disabled).toBe(true);
+
+    // Clicking other choices should do nothing
+    fireEvent.click(optionB);
+    expect(optionB.checked).toBe(false);
+    expect(optionA.checked).toBe(true);
+
+    // Eliminator tools should be disabled
+    const crossOutToggle = screen.getByRole("button", { name: "Cross out" });
+    expect(crossOutToggle.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(crossOutToggle);
+    expect(crossOutToggle.getAttribute("aria-pressed")).toBe("true");
+
+    const eliminateBtn = screen.getByRole("button", { name: "Cross out choice B" });
+    expect(eliminateBtn.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(eliminateBtn);
+    expect(optionB.disabled).toBe(true);
+    expect(sessionStorage.getItem("sat-grinder:eliminated:session-1:question-1")).toBeNull();
+  });
+
+  it("makes SPR answers non-interactable after a correct submission", async () => {
+    mocks.submitPracticeAnswer.mockResolvedValue({ correct: true, message: "ok", firstAttempt: true, completed: false });
+    const sprQuestion = {
+      ...question,
+      id: "question-2",
+      type: "spr" as const,
+      answerOptions: [],
+    };
+    renderCard({ question: sprQuestion });
+
+    const input = screen.getByLabelText("Your answer") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "42" } });
+    fireEvent.click(screen.getByRole("button", { name: "Check" }));
+
+    await screen.findByRole("heading", { name: "Correct, first try." });
+
+    expect(input.disabled).toBe(true);
+    expect(input.readOnly).toBe(true);
+
+    fireEvent.change(input, { target: { value: "99" } });
+    expect(input.value).toBe("42");
   });
 });
 

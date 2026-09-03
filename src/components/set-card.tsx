@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CheckCircle2, Highlighter, LoaderCircle, RotateCcw, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, Highlighter, LoaderCircle, RotateCcw, X } from "lucide-react";
 import type { AnswerFeedback, PracticeQuestion } from "@/lib/supabase-api";
 import { abandonPracticeSession, submitPracticeAnswer } from "@/lib/supabase-api";
 import { Wordmark } from "@/components/app-shell";
@@ -12,6 +12,12 @@ import { QuestionHtml } from "@/components/question-html";
 import { formatClock, sectionLabel } from "@/lib/format";
 import { MAX_MATH_RESPONSE_LENGTH } from "@/lib/math-response";
 import { readSetResults, recordSetResult, type SetResults } from "@/lib/set-results";
+import {
+  readCrossOutEnabled,
+  readTimerVisible,
+  saveCrossOutEnabled,
+  saveTimerVisible,
+} from "@/lib/practice-preferences";
 import { useActiveAttemptTimer } from "@/lib/use-active-attempt-timer";
 
 export const STOP_SET_PROMPT = "Stop this set? Answers so far are saved.";
@@ -37,7 +43,8 @@ export function SetCard({ sessionId, question, resolved, total, onRefresh }: { s
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [stopping, setStopping] = useState(false);
-  const [eliminatorEnabled, setEliminatorEnabled] = useState(true);
+  const [eliminatorEnabled, setEliminatorEnabled] = useState(readCrossOutEnabled);
+  const [timerVisible, setTimerVisible] = useState(readTimerVisible);
   const [eliminatedChoices, setEliminatedChoices] = useState<string[]>([]);
   const [eliminatorAnnouncement, setEliminatorAnnouncement] = useState("");
   const [results, setResults] = useState<SetResults>({});
@@ -46,6 +53,8 @@ export function SetCard({ sessionId, question, resolved, total, onRefresh }: { s
   const [elapsedMs, setElapsedMs] = useState(0);
   const attemptTimer = useActiveAttemptTimer(`${sessionId}:${question.id}`);
   const { elapsed } = attemptTimer;
+
+  const solved = Boolean(feedback?.correct);
 
   useLayoutEffect(() => {
     const validLetters = new Set(question.answerOptions.map((option) => option.letter));
@@ -67,7 +76,23 @@ export function SetCard({ sessionId, question, resolved, total, onRefresh }: { s
   function clearMiss() {
     if (feedback && !feedback.correct) { setFeedback(null); attemptTimer.resume(); }
   }
+  function toggleTimerVisibility() {
+    setTimerVisible((visible) => {
+      const next = !visible;
+      saveTimerVisible(next);
+      return next;
+    });
+  }
+  function toggleEliminator() {
+    if (solved) return;
+    setEliminatorEnabled((enabled) => {
+      const next = !enabled;
+      saveCrossOutEnabled(next);
+      return next;
+    });
+  }
   function toggleChoiceElimination(letter: string) {
+    if (solved) return;
     const willEliminate = !eliminatedChoices.includes(letter);
     const updated = willEliminate ? [...eliminatedChoices, letter] : eliminatedChoices.filter((choice) => choice !== letter);
     setEliminatedChoices(updated);
@@ -101,7 +126,6 @@ export function SetCard({ sessionId, question, resolved, total, onRefresh }: { s
   async function next() { setLoading(true); await onRefresh(); }
 
   const split = Boolean(question.stimulusHtml);
-  const solved = Boolean(feedback?.correct);
   const alsoAccepted = question.type === "spr" && feedback?.correctAnswers
     ? feedback.correctAnswers.filter((answer) => answer.trim() !== response.trim())
     : [];
@@ -113,7 +137,15 @@ export function SetCard({ sessionId, question, resolved, total, onRefresh }: { s
       <div className="set-bar-lead"><Wordmark href="/practice" /><i aria-hidden="true" /><p className="eyebrow">{sectionLabel(question.section)} · {resolved + 1} of {total}</p></div>
       <SetStrip total={total} resolved={resolved} results={results} />
       <div className="set-bar-end">
-        <span className="timer num" aria-label="Time on this question">{formatClock(elapsedMs)}</span>
+        <button
+          type="button"
+          className={`timer ${timerVisible ? "num" : "timer-hidden"}`}
+          onClick={toggleTimerVisibility}
+          aria-label={timerVisible ? "Time on this question (Hide timer)" : "Time on this question (Show timer)"}
+          title={timerVisible ? "Hide timer" : "Show timer"}
+        >
+          {timerVisible ? formatClock(elapsedMs) : <><Clock className="size-4" aria-hidden="true" /><span className="sr-only">Show timer</span></>}
+        </button>
         <button className="icon-btn" onClick={stop} disabled={stopping} aria-label="Stop set">{stopping ? <LoaderCircle className="size-4 animate-spin" /> : <X className="size-4" />}</button>
       </div>
     </div>
@@ -130,7 +162,13 @@ export function SetCard({ sessionId, question, resolved, total, onRefresh }: { s
         {question.type === "mcq" ? <fieldset disabled={solved}>
           <legend className="sr-only">Answer choices</legend>
           <div className="answer-choice-toolbar">
-            <button type="button" className={`choice-eliminator-toggle ${eliminatorEnabled ? "choice-eliminator-toggle-active" : ""}`} aria-pressed={eliminatorEnabled} onClick={() => setEliminatorEnabled((enabled) => !enabled)}>
+            <button
+              type="button"
+              className={`choice-eliminator-toggle ${eliminatorEnabled ? "choice-eliminator-toggle-active" : ""}`}
+              aria-pressed={eliminatorEnabled}
+              disabled={solved}
+              onClick={toggleEliminator}
+            >
               <span className="choice-eliminator-icon" aria-hidden="true">ABC</span>
               Cross out
             </button>
@@ -141,11 +179,28 @@ export function SetCard({ sessionId, question, resolved, total, onRefresh }: { s
               const showEliminationControl = eliminatorEnabled || eliminated;
               return <div key={option.letter} className={`answer-option-row ${showEliminationControl ? "answer-option-row-with-tool" : ""} ${eliminated ? "answer-option-row-eliminated" : ""}`}>
                 <label className={`answer-option ${response === option.letter ? "answer-option-selected" : ""}`}>
-                  <input type="radio" name="answer" value={option.letter} checked={response === option.letter} disabled={eliminated} onChange={() => { setResponse(option.letter); clearMiss(); }} />
+                  <input
+                    type="radio"
+                    name="answer"
+                    value={option.letter}
+                    checked={response === option.letter}
+                    disabled={eliminated || solved}
+                    onChange={() => {
+                      if (solved) return;
+                      setResponse(option.letter);
+                      clearMiss();
+                    }}
+                  />
                   <span className="answer-letter">{option.letter}</span>
                   <span className="answer-option-content"><QuestionHtml html={option.content} /></span>
                 </label>
-                {showEliminationControl && <button type="button" className={`answer-eliminate-button ${eliminated ? "answer-eliminate-button-undo" : ""}`} aria-label={eliminated ? `Undo elimination of choice ${option.letter}` : `Cross out choice ${option.letter}`} onClick={() => toggleChoiceElimination(option.letter)}>
+                {showEliminationControl && <button
+                  type="button"
+                  className={`answer-eliminate-button ${eliminated ? "answer-eliminate-button-undo" : ""}`}
+                  aria-label={eliminated ? `Undo elimination of choice ${option.letter}` : `Cross out choice ${option.letter}`}
+                  disabled={solved}
+                  onClick={() => toggleChoiceElimination(option.letter)}
+                >
                   {eliminated ? <><RotateCcw className="size-4" aria-hidden="true" /><span>Undo</span></> : <span className="answer-eliminate-icon" aria-hidden="true">{option.letter}</span>}
                 </button>}
               </div>;
@@ -156,7 +211,24 @@ export function SetCard({ sessionId, question, resolved, total, onRefresh }: { s
         : <div>
           <label className="form-label" htmlFor={`answer-${question.id}`}>Your answer</label>
           <div className="math-answer-row mt-2">
-            <input id={`answer-${question.id}`} className="input math-answer-input" value={response} maxLength={MAX_MATH_RESPONSE_LENGTH} disabled={solved} onChange={(event) => { setResponse(event.target.value); clearMiss(); }} placeholder="e.g. 5/3 or 0.75" inputMode="text" autoCapitalize="none" autoComplete="off" spellCheck={false} />
+            <input
+              id={`answer-${question.id}`}
+              className="input math-answer-input"
+              value={response}
+              maxLength={MAX_MATH_RESPONSE_LENGTH}
+              disabled={solved}
+              readOnly={solved}
+              onChange={(event) => {
+                if (solved) return;
+                setResponse(event.target.value);
+                clearMiss();
+              }}
+              placeholder="e.g. 5/3 or 0.75"
+              inputMode="text"
+              autoCapitalize="none"
+              autoComplete="off"
+              spellCheck={false}
+            />
             <span className={`math-answer-preview ${response.trim() ? "" : "math-answer-preview-empty"}`} aria-label="Rendered answer">{response.trim() ? <MathExpression value={response} /> : "Preview"}</span>
           </div>
         </div>}

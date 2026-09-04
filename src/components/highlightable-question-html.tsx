@@ -95,15 +95,38 @@ function parseAnnotations(value: string | null, textLength: number): TextAnnotat
   }
 }
 
+// SVG only renders SVG-namespace children inside <text>/<tspan>, so an HTML <mark> inserted there
+// is silently dropped from the paint. Chart labels are excluded from the highlightable stream
+// entirely (like an <img> would be), rather than counted and then wrapped.
+function isSvgText(node: Node): boolean {
+  return !!(node.parentElement?.closest("svg"));
+}
+
+function createHighlightableTextWalker(root: HTMLElement) {
+  return document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => (isSvgText(node) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+  });
+}
+
+function highlightableTextLength(root: HTMLElement) {
+  const walker = createHighlightableTextWalker(root);
+  let length = 0;
+  let current: Node | null;
+  while ((current = walker.nextNode())) length += (current as Text).data.length;
+  return length;
+}
+
 function textOffset(root: HTMLElement, node: Node, offset: number) {
   const range = document.createRange();
   range.selectNodeContents(root);
   range.setEnd(node, offset);
-  return range.toString().length;
+  const fragment = range.cloneContents();
+  fragment.querySelectorAll("svg").forEach((svg) => svg.remove());
+  return fragment.textContent?.length ?? 0;
 }
 
 function wrapAnnotation(root: HTMLElement, annotation: TextAnnotation) {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const walker = createHighlightableTextWalker(root);
   const segments: { node: Text; start: number; end: number }[] = [];
   let position = 0;
   let current: Node | null;
@@ -157,7 +180,7 @@ export function HighlightableQuestionHtml({
     root.innerHTML = normalizedHtml;
     let stored: string | null = null;
     try { stored = sessionStorage.getItem(`sat-grinder:highlights:${storageKey}`); } catch { /* Storage may be disabled by browser policy. */ }
-    const restored = parseAnnotations(stored, root.textContent?.length ?? 0);
+    const restored = parseAnnotations(stored, highlightableTextLength(root));
     setAnnotations(restored);
     setToolbar(null);
   }, [normalizedHtml, storageKey]);
